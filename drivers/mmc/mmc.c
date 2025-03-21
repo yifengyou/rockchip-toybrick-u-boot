@@ -658,18 +658,19 @@ static int mmc_complete_op_cond(struct mmc *mmc)
 
 static int mmc_send_ext_csd(struct mmc *mmc, u8 *ext_csd)
 {
-	static int initialized;
 	struct mmc_cmd cmd;
 	struct mmc_data data;
 	int err;
 
+#ifdef CONFIG_MMC_USE_PRE_CONFIG
+	static int initialized;
 	if (initialized) {
 		memcpy(ext_csd, mmc_ext_csd, 512);
 		return 0;
 	}
 
 	initialized = 1;
-
+#endif
 	/* Get the Card Status Register */
 	cmd.cmdidx = MMC_CMD_SEND_EXT_CSD;
 	cmd.resp_type = MMC_RSP_R1;
@@ -838,6 +839,7 @@ static int mmc_select_bus_width(struct mmc *mmc)
 	return err;
 }
 
+#ifndef CONFIG_MMC_SIMPLE
 static const u8 tuning_blk_pattern_4bit[] = {
 	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
 	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
@@ -900,9 +902,13 @@ int mmc_send_tuning(struct mmc *mmc, u32 opcode)
 	data.flags = MMC_DATA_READ;
 
 	err = mmc_send_cmd(mmc, &cmd, &data);
-	if (err)
+	if (err) {
+		cmd.cmdidx = MMC_CMD_STOP_TRANSMISSION;
+		cmd.cmdarg = 0;
+		cmd.resp_type = MMC_RSP_R1b;
+		mmc_send_cmd(mmc, &cmd, NULL);
 		goto out;
-
+	}
 	if (memcmp(data_buf, tuning_block_pattern, size))
 		err = -EIO;
 out:
@@ -940,6 +946,12 @@ static int mmc_hs200_tuning(struct mmc *mmc)
 	return mmc_execute_tuning(mmc);
 }
 
+#else
+int mmc_send_tuning(struct mmc *mmc, u32 opcode) { return 0; }
+int mmc_execute_tuning(struct mmc *mmc) { return 0; }
+static int mmc_hs200_tuning(struct mmc *mmc) { return 0; }
+#endif
+
 static int mmc_select_hs(struct mmc *mmc)
 {
 	int ret;
@@ -974,6 +986,7 @@ static int mmc_select_hs_ddr(struct mmc *mmc)
 	return 0;
 }
 
+#ifndef CONFIG_MMC_SIMPLE
 static int mmc_select_hs200(struct mmc *mmc)
 {
 	int ret;
@@ -996,6 +1009,19 @@ static int mmc_select_hs200(struct mmc *mmc)
 	}
 
 	return ret;
+}
+
+static int mmc_switch_to_hs400(struct mmc *mmc)
+{
+	u8 val, fixed_drv_type, card_drv_type, drive_strength;
+
+	fixed_drv_type = mmc->cfg->fixed_drv_type;
+	card_drv_type = mmc->raw_driver_strength | mmc_driver_type_mask(0);
+	drive_strength = (card_drv_type & mmc_driver_type_mask(fixed_drv_type))
+				 ? fixed_drv_type : 0;
+	val = EXT_CSD_TIMING_HS400 | drive_strength << EXT_CSD_DRV_STR_SHIFT;
+
+	return __mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_HS_TIMING, val, false);
 }
 
 static int mmc_select_hs400(struct mmc *mmc)
@@ -1026,8 +1052,7 @@ static int mmc_select_hs400(struct mmc *mmc)
 		return ret;
 
 	/* Switch card to HS400 */
-	ret = __mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
-			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS400, false);
+	ret = mmc_switch_to_hs400(mmc);
 	if (ret)
 		return ret;
 
@@ -1036,6 +1061,49 @@ static int mmc_select_hs400(struct mmc *mmc)
 
 	return ret;
 }
+
+static int mmc_select_hs400es(struct mmc *mmc)
+{
+	int err;
+
+	/* Switch card to HS mode */
+	err = __mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
+			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS, false);
+	if (err)
+		return err;
+
+	/* Set host controller to HS timing */
+	mmc_set_timing(mmc, MMC_TIMING_MMC_HS);
+
+	err = mmc_send_status(mmc, 1000);
+	if (err)
+		return err;
+
+	mmc_set_clock(mmc, MMC_HIGH_52_MAX_DTR);
+
+	err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_BUS_WIDTH,
+			 EXT_CSD_DDR_BUS_WIDTH_8 |
+			 EXT_CSD_BUS_WIDTH_STROBE);
+	if (err) {
+		printf("switch to bus width for hs400 failed\n");
+		return err;
+	}
+
+	/* Switch card to HS400 */
+	err = mmc_switch_to_hs400(mmc);
+	if (err)
+		return err;
+
+	/* Set host controller to HS400 timing and frequency */
+	mmc_set_timing(mmc, MMC_TIMING_MMC_HS400ES);
+
+	return mmc_set_enhanced_strobe(mmc);
+}
+#else
+static int mmc_select_hs200(struct mmc *mmc) { return 0; }
+static int mmc_select_hs400(struct mmc *mmc) { return 0; }
+static int mmc_select_hs400es(struct mmc *mmc) { return 0; }
+#endif
 
 static u32 mmc_select_card_type(struct mmc *mmc, u8 *ext_csd)
 {
@@ -1126,6 +1194,16 @@ static int mmc_change_freq(struct mmc *mmc)
 		return err;
 
 	avail_type = mmc_select_card_type(mmc, ext_csd);
+
+	if (avail_type & EXT_CSD_CARD_TYPE_HS400ES) {
+		err = mmc_select_bus_width(mmc);
+		if (err > 0 && mmc->bus_width == MMC_BUS_WIDTH_8BIT) {
+			err = mmc_select_hs400es(mmc);
+			mmc_set_bus_speed(mmc, avail_type);
+			if (!err)
+				return err;
+		}
+	}
 
 	if (avail_type & EXT_CSD_CARD_TYPE_HS200)
 		err = mmc_select_hs200(mmc);
@@ -1811,6 +1889,10 @@ static int mmc_startup(struct mmc *mmc)
 	mmc->erase_grp_size = 1;
 	mmc->part_config = MMCPART_NOAVAILABLE;
 	if (!IS_SD(mmc) && (mmc->version >= MMC_VERSION_4)) {
+		/* select high speed to reduce initialization time */
+		mmc_select_hs(mmc);
+		mmc_set_clock(mmc, MMC_HIGH_52_MAX_DTR);
+
 		/* check  ext_csd version and capacity */
 		err = mmc_send_ext_csd(mmc, ext_csd);
 		if (err)
@@ -1960,6 +2042,8 @@ static int mmc_startup(struct mmc *mmc)
 			* ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
 
 		mmc->wr_rel_set = ext_csd[EXT_CSD_WR_REL_SET];
+
+		mmc->raw_driver_strength = ext_csd[EXT_CSD_DRIVER_STRENGTH];
 	}
 
 	err = mmc_set_capacity(mmc, mmc_get_blk_desc(mmc)->hwpart);
