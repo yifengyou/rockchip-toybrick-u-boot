@@ -126,7 +126,7 @@ static int hwid_adc_find_dtb(const char *file_name)
 	ulong dtb_adc;
 	u32 raw_adc;
 
-	debug("[HW-ADC]: %s\n", file_name);
+	printf("[HW-ADC]: %s\n", file_name);
 
 	chn_len = strlen(KEY_WORDS_ADC_CH);
 	prefix_len = strlen(KEY_WORDS_ADC_CTRL);
@@ -174,7 +174,7 @@ static int hwid_adc_find_dtb(const char *file_name)
 		strlcpy(adc_val, adc_tail + chn_len + 2, len + 1);
 		dtb_adc = simple_strtoul(adc_val, NULL, 10);
 		found = (abs(dtb_adc - adc_record[channel]) <= margin) ? 1 : 0;
-		debug("   - dev=%s, channel=%d, dtb_adc=%ld, read=%d, found=%d\n",
+		printf("   - dev=%s, channel=%d, dtb_adc=%ld, read=%d, found=%d\n",
 		      dev_name, channel, dtb_adc, adc_record[channel], found);
 		if (!found)
 			break;
