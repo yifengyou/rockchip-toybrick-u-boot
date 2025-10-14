@@ -10,27 +10,27 @@
 unsigned int rand_r(unsigned int *seedp)
 {
 	struct udevice *dev;
-	unsigned int rand;
+	unsigned int rand_val;
 	int ret;
 
 	ret = uclass_get_device(UCLASS_RNG, 0, &dev);
-	if (ret) {
+	if (ret != 0) {
 		printf("No RNG device, ret=%d\n", ret);
-		return ret;
+		return (unsigned int)ret;
 	}
 
-	ret = dm_rng_read(dev, &rand, sizeof(unsigned int));
-	if (ret) {
+	ret = dm_rng_read(dev, &rand_val, sizeof(unsigned int));
+	if (ret != 0) {
 		printf("Reading RNG failed, ret=%d\n", ret);
-		return ret;
+		return (unsigned int)ret;
 	}
 
-	return rand;
+	return rand_val;
 }
 
 unsigned int rand(void)
 {
-	return rand_r(0);
+	return rand_r(NULL);
 }
 
 void srand(unsigned int seed)
