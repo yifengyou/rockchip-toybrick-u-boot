@@ -6,8 +6,8 @@
 #ifndef _CRYPTO_HASH_CACHE_H_
 #define _CRYPTO_HASH_CACHE_H_
 
-#define	HASH_CACHE_SIZE		8192
-#define	CIPHER_CACHE_SIZE	8192
+#define	HASH_CACHE_SIZE		(8192U)
+#define	CIPHER_CACHE_SIZE	(8192U)
 
 typedef int (*crypto_hash_calc)(void *hw_data, const u8 *data, u32 data_len,
 				u8 *started_flag, u8 is_last);

@@ -13,13 +13,13 @@
 
 #define SM2_RAM_BASE					((crypto_base) + 0x1000)
 
-#define	_SBF(s,	v)			((v) <<	(s))
-#define	_BIT(b)				_SBF(b,	1)
+#define	_SBF(s,	v)			((u32)((u32)(v) << (s)))
+#define	_BIT(b)				_SBF(b,	1U)
 
-#define RK_ECP_MAX_BITS			256
-#define RK_ECP_MAX_BYTES		((RK_ECP_MAX_BITS) / 8)
-#define RK_ECP_MAX_WORDS		((RK_ECP_MAX_BITS) / 32)
-#define RK_ECP_MAX_WORDS_ALL		(512 / 32)
+#define RK_ECP_MAX_BITS			(256U)
+#define RK_ECP_MAX_BYTES		((RK_ECP_MAX_BITS) / 8U)
+#define RK_ECP_MAX_WORDS		((RK_ECP_MAX_BITS) / 32U)
+#define RK_ECP_MAX_WORDS_ALL		(512U / 32U)
 
 #define RK_ECC_CTL					0x03F0
 #define RK_ECC_CTL_RAND_K_SRC_SOFT			_SBF(12, 0)

@@ -18,25 +18,26 @@ static int hash_cache_calc(struct crypto_hash_cache *hash_cache, const u8 *data,
 	if (!hash_cache->cache) {
 		hash_cache->cache = (u8 *)memalign(CONFIG_SYS_CACHELINE_SIZE,
 						   HASH_CACHE_SIZE);
-		if (!hash_cache->cache)
+		if (!hash_cache->cache) {
 			goto error;
+		}
 
 		hash_cache->cache_size = 0;
 	}
 
 	while (1) {
-		u32 tmp_len = 0;
+		u32 tmp_len;
 
 		if (hash_cache->cache_size + data_len <= HASH_CACHE_SIZE) {
 			/* copy to cache */
 			debug("%s, %d: copy to cache %u\n",
 			      __func__, __LINE__, data_len);
-			memcpy(hash_cache->cache + hash_cache->cache_size, data,
-			       data_len);
+			memcpy((uint8_t *)(hash_cache->cache + hash_cache->cache_size),
+			       (const uint8_t *)data, data_len);
 			hash_cache->cache_size += data_len;
 
 			/* if last one calc cache immediately */
-			if (is_last) {
+			if (is_last != 0U) {
 				debug("%s, %d: last one calc cache %u\n",
 				      __func__, __LINE__,
 				      hash_cache->cache_size);
@@ -46,8 +47,9 @@ static int hash_cache_calc(struct crypto_hash_cache *hash_cache, const u8 *data,
 						  hash_cache->cache_size,
 						  &hash_cache->is_started,
 						  is_last);
-				if (ret)
+				if (ret != 0) {
 					goto error;
+				}
 			}
 			break;
 		}
@@ -57,13 +59,14 @@ static int hash_cache_calc(struct crypto_hash_cache *hash_cache, const u8 *data,
 		tmp_len = HASH_CACHE_SIZE - hash_cache->cache_size;
 		debug("%s, %d: make cache be full %u\n",
 		      __func__, __LINE__, tmp_len);
-		memcpy(hash_cache->cache + hash_cache->cache_size,
-		       data, tmp_len);
+		memcpy((uint8_t *)(hash_cache->cache + hash_cache->cache_size),
+		       (const uint8_t *)data, tmp_len);
 
 		ret = direct_calc(hash_cache->user_data, hash_cache->cache,
 				  HASH_CACHE_SIZE, &hash_cache->is_started, 0);
-		if (ret)
+		if (ret != 0) {
 			goto error;
+		}
 
 		data += tmp_len;
 		data_len -= tmp_len;
@@ -80,8 +83,9 @@ void crypto_flush_cacheline(ulong addr, ulong size)
 	ulong alignment = CONFIG_SYS_CACHELINE_SIZE;
 	ulong aligned_input, aligned_len;
 
-	if (!addr || !size)
+	if ((addr == 0U) || (size == 0U)) {
 		return;
+	}
 
 	/* Must flush dcache before crypto DMA fetch data region */
 	aligned_input = round_down(addr, alignment);
@@ -93,14 +97,16 @@ struct crypto_hash_cache *crypto_hash_cache_alloc(crypto_hash_calc direct_calc,
 						  void *user_data, u32 total,
 						  u32 data_align, u32 len_align)
 {
-	struct crypto_hash_cache *hash_cache = NULL;
+	struct crypto_hash_cache *hash_cache;
 
-	if (!direct_calc)
+	if (direct_calc == NULL) {
 		return NULL;
+	}
 
 	hash_cache = malloc(sizeof(struct crypto_hash_cache));
-	if (!hash_cache)
+	if (!hash_cache) {
 		return NULL;
+	}
 
 	memset(hash_cache, 0x00, sizeof(*hash_cache));
 
@@ -115,11 +121,13 @@ struct crypto_hash_cache *crypto_hash_cache_alloc(crypto_hash_calc direct_calc,
 
 void crypto_hash_cache_free(struct crypto_hash_cache *hash_cache)
 {
-	if (!hash_cache)
+	if (!hash_cache) {
 		return;
+	}
 
-	if (hash_cache->cache)
+	if (hash_cache->cache) {
 		free(hash_cache->cache);
+	}
 
 	free(hash_cache);
 }
@@ -128,20 +136,21 @@ int crypto_hash_update_with_cache(struct crypto_hash_cache *hash_cache,
 				  const u8 *data, u32 data_len)
 {
 	crypto_hash_calc direct_calc = hash_cache->direct_calc;
-	const u8 *direct_data = NULL, *cache_data = NULL;
+	const u8 *direct_data, *cache_data;
 	u32 direct_data_len = 0, cache_data_len = 0;
-	u8 is_last = 0;
-	int ret = 0;
+	u8 is_last;
+	int ret;
 
-	if (hash_cache->left_len < data_len)
+	if (hash_cache->left_len < data_len) {
 		goto error;
+	}
 
-	is_last = hash_cache->left_len == data_len ? 1 : 0;
+	is_last = (hash_cache->left_len == data_len) ? 1U : 0U;
 
-	if (!hash_cache->use_cache &&
+	if ((hash_cache->use_cache == 0U) &&
 	    IS_ALIGNED((ulong)data, hash_cache->data_align)) {
 		direct_data = data;
-		if (IS_ALIGNED(data_len, hash_cache->len_align) || is_last) {
+		if (IS_ALIGNED(data_len, hash_cache->len_align) || (is_last != 0U)) {
 			/* calc all directly */
 			debug("%s, %d: calc all directly\n",
 			      __func__, __LINE__);
@@ -150,8 +159,7 @@ int crypto_hash_update_with_cache(struct crypto_hash_cache *hash_cache,
 			/* calc some directly calc some in cache */
 			debug("%s, %d: calc some directly calc some in cache\n",
 			      __func__, __LINE__);
-			direct_data_len = round_down((ulong)data_len,
-						     hash_cache->len_align);
+			direct_data_len = (u32)round_down(data_len, hash_cache->len_align);
 			cache_data = direct_data + direct_data_len;
 			cache_data_len = data_len % hash_cache->len_align;
 			hash_cache->use_cache = 1;
@@ -164,24 +172,26 @@ int crypto_hash_update_with_cache(struct crypto_hash_cache *hash_cache,
 		hash_cache->use_cache = 1;
 	}
 
-	if (direct_data_len) {
+	if (direct_data_len != 0) {
 		debug("%s, %d: calc direct data %u\n",
 		      __func__, __LINE__, direct_data_len);
 		ret = direct_calc(hash_cache->user_data,
 				  direct_data, direct_data_len,
 				  &hash_cache->is_started, is_last);
-		if (ret)
+		if (ret != 0) {
 			goto error;
+		}
 		hash_cache->left_len -= direct_data_len;
 	}
 
-	if (cache_data_len) {
+	if (cache_data_len != 0U) {
 		debug("%s, %d: calc cache data %u\n",
 		      __func__, __LINE__, cache_data_len);
 		ret = hash_cache_calc(hash_cache, cache_data,
 				      cache_data_len, is_last);
-		if (ret)
+		if (ret != 0) {
 			goto error;
+		}
 		hash_cache->left_len -= cache_data_len;
 	}
 

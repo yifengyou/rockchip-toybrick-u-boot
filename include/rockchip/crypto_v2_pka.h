@@ -10,34 +10,31 @@
 #include <rockchip/crypto_v2.h>
 #include <rockchip/crypto_v2_util.h>
 
-#define CRYPTO_BASE crypto_base
+#define CRYPTO_BASE ((uintptr_t)crypto_base)
 
 
-#define RK_MAX_RSA_NBITS	4096
-#define RK_MAX_RSA_NCHARS	((RK_MAX_RSA_NBITS) / 8)
-#define RK_MAX_RSA_BWORDS	((RK_MAX_RSA_NBITS) / 32)
+#define RK_MAX_RSA_NBITS	4096U
+#define RK_MAX_RSA_NCHARS	((RK_MAX_RSA_NBITS) / 8U)
+#define RK_MAX_RSA_BWORDS	((RK_MAX_RSA_NBITS) / 32U)
 
 /* define NpCreateFlag values */
-#define RK_PKA_CREATE_NP		1
-#define RK_PKA_SET_NP		0
+#define RK_PKA_CREATE_NP	1U
+#define RK_PKA_SET_NP		0U
 /* size of buffer for Barrett modulus tag NP, used in PKI algorithms */
-#define RK_PKA_BARRETT_IN_WORDS	5
+#define RK_PKA_BARRETT_IN_WORDS	5U
 /* Barrett modulus tag type - 5 words size array */
 typedef u32 RK_PKA_NP_t[RK_PKA_BARRETT_IN_WORDS];
 
 #define RK_PKA_MemSetZero(buf, size) \
-			util_word_memset((void *)buf, 0x00, size)
+			util_word_memset(((void *)(buf)), 0x00, (size))
 
 #define RK_PKA_FastMemCpy(dst, src, size) \
-			util_word_memcpy((void *)dst, (void *)src, size)
-
-#define RK_PKA_ReverseMemcpy(dst, src, size) \
-			util_reverse_word_memcpy((void *)dst, (void *)src, size)
+			util_word_memcpy(((void *)(dst)), ((void *)(src)), (size))
 
 #define RES_DISCARD 0x3F
 
 /* base address -  0x00F10B00 */
-#define RK_PKI_ERROR_BASE			0x00F10B00
+#define RK_PKI_ERROR_BASE			0x00F10B00U
 #define RK_PKI_HW_VER_INCORRECT_ERROR		(RK_PKI_ERROR_BASE + 0x0UL)
 #define RK_PKI_HW_DECRYPED_ERROR		(RK_PKI_ERROR_BASE + 0x1UL)
 #define RK_PKI_KEY_SIZE_ERROR			(RK_PKI_ERROR_BASE + 0x2UL)
@@ -53,14 +50,14 @@ typedef u32 RK_PKA_NP_t[RK_PKA_BARRETT_IN_WORDS];
 #define RK_PKA_DATA_SIZE_ERROR			(RK_PKI_ERROR_BASE + 0x30UL)
 #define RK_PKA_OPERATION_SIZE_ERROR		(RK_PKI_ERROR_BASE + 0x31UL)
 
-#define RK_PKA_MAX_REGS_COUNT			8
-#define RK_PKA_MAX_PHYS_MEM_REGS_COUNT		32
-#define RK_PKA_MAX_REGS_MEM_SIZE_BYTES		4096
+#define RK_PKA_MAX_REGS_COUNT			(8U)
+#define RK_PKA_MAX_PHYS_MEM_REGS_COUNT		(32U)
+#define RK_PKA_MAX_REGS_MEM_SIZE_BYTES		(4096U)
 
 /* PKA control values  */
-#define RK_PKA_PIPE_READY			1
-#define RK_PKA_OP_DONE				1
-#define RK_PKA_SW_REST				1
+#define RK_PKA_PIPE_READY			(1U)
+#define RK_PKA_OP_DONE				(1U)
+#define RK_PKA_SW_REST				(1U)
 
 /* PKA N_NP_T0_T1 register fields positions (low bit position) */
 #define RK_PKA_N_NP_T0_T1_REG_N_POS		CRYPTO_N_VIRTUAL_ADDR_SHIFT
@@ -80,31 +77,31 @@ typedef u32 RK_PKA_NP_t[RK_PKA_BARRETT_IN_WORDS];
 				PKA_T1 << RK_PKA_N_NP_T0_T1_REG_T1_POS)
 
 /* PKA STATUS register fields positions (low bit position) */
-#define RK_PKA_STATUS_PIPE_IS_REDY_POS		0
-#define RK_PKA_STATUS_PKA_BUSY_POS		1
-#define RK_PKA_STATUS_ALU_OUT_ZERO_POS		2
-#define RK_PKA_STATUS_ALU_MODOVRFLW_POS		3
-#define RK_PKA_STATUS_DIV_BY_ZERO_POS		4
-#define RK_PKA_STATUS_ALU_CARRY_POS		5
-#define RK_PKA_STATUS_ALU_SIGN_OUT_POS		6
-#define RK_PKA_STATUS_MODINV_OF_ZERO_POS	7
-#define RK_PKA_STATUS_PKA_CPU_BUSY_POS		8
-#define RK_PKA_STATUS_OPCODE_POS		9
-#define RK_PKA_STATUS_TAG_POS			14
+#define RK_PKA_STATUS_PIPE_IS_REDY_POS		0U
+#define RK_PKA_STATUS_PKA_BUSY_POS		1U
+#define RK_PKA_STATUS_ALU_OUT_ZERO_POS		2U
+#define RK_PKA_STATUS_ALU_MODOVRFLW_POS		3U
+#define RK_PKA_STATUS_DIV_BY_ZERO_POS		4U
+#define RK_PKA_STATUS_ALU_CARRY_POS		5U
+#define RK_PKA_STATUS_ALU_SIGN_OUT_POS		6U
+#define RK_PKA_STATUS_MODINV_OF_ZERO_POS	7U
+#define RK_PKA_STATUS_PKA_CPU_BUSY_POS		8U
+#define RK_PKA_STATUS_OPCODE_POS		9U
+#define RK_PKA_STATUS_TAG_POS			14U
 
-#define RK_PKA_STATUS_OPCODE_MASK		0x1FUl
-#define RK_PKA_STATUS_TAG_MASK			0x3FUl
+#define RK_PKA_STATUS_OPCODE_MASK		0x1FU
+#define RK_PKA_STATUS_TAG_MASK			0x3FU
 
 /* PKA OPCODE register fields positions (low bit position) */
-#define RK_PKA_OPCODE_TAG_POS			0
-#define RK_PKA_OPCODE_RESULT_POS		6
-#define RK_PKA_OPCODE_R_DISCARD_POS		11
-#define RK_PKA_OPCODE_OPERAND_2_POS		12
-#define RK_PKA_OPCODE_OPERAND_2_IMMED_POS	17
-#define RK_PKA_OPCODE_OPERAND_1_POS		18
-#define RK_PKA_OPCODE_OPERAND_1_IMMED_POS	23
-#define RK_PKA_OPCODE_LEN_POS			24
-#define RK_PKA_OPCODE_OPERATION_ID_POS		27
+#define RK_PKA_OPCODE_TAG_POS			0U
+#define RK_PKA_OPCODE_RESULT_POS		6U
+#define RK_PKA_OPCODE_R_DISCARD_POS		11U
+#define RK_PKA_OPCODE_OPERAND_2_POS		12U
+#define RK_PKA_OPCODE_OPERAND_2_IMMED_POS	17U
+#define RK_PKA_OPCODE_OPERAND_1_POS		18U
+#define RK_PKA_OPCODE_OPERAND_1_IMMED_POS	23U
+#define RK_PKA_OPCODE_LEN_POS			24U
+#define RK_PKA_OPCODE_OPERATION_ID_POS		27U
 
 /* PKA data registers base address
  *should be always zero since it's the offset
@@ -175,42 +172,16 @@ void rk_pka_wait_on_done(void);
 
 #define PKA_CLK_DISABLE()
 
-void rk_pka_set_startmemaddr_reg(u32 start_mem_addr);
-
-void rk_pka_set_N_NP_T0_T1_reg(u32 N, u32 NP, u32 T0, u32 T1);
-
-void rk_pka_set_default_N_NP_T0_T1_reg(void);
-
-void rk_pka_get_status(u32 *status);
-
-void rk_pka_get_status_alu_outzero(u32 *status);
-
-void rk_pka_get_status_mod_overfl(u32 *status);
-
 void rk_pka_get_status_div_byzero(u32 *status);
-
-void rk_pka_get_status_carry(u32 *status);
-
-void rk_pka_get_status_alu_signout(u32 *status);
-
-void rk_pka_get_status_modinv_ofzero(u32 *status);
-
-void rk_pka_get_status_opcode(u32 *status);
-
-void rk_pka_get_status_tag(u32 *status);
 
 /******************************************************************
  * Macros for setting and reading sizes from PKA regsSizesTable   *
  ******************************************************************/
-void rk_pka_set_regsize(u32 size_bits, u32 entry_num);
-
 void rk_pka_read_regsize(u32 *size_bits, u32 entry_num);
 
 /******************************************************************
  * Macros for setting and reading addresses of PKA data registers *
  ******************************************************************/
-void rk_pka_set_regaddr(u32 vir_reg, u32 phys_addr);
-
 void rk_pka_get_regaddr(u32 vir_reg, u32 *phys_addr);
 
 void rk_pka_read_regaddr(u32 vir_reg, u32 *phys_addr);
@@ -227,28 +198,18 @@ u32 rk_pka_make_full_opcode(u32 opcode, u32 len_id,
 /******************************************************
  * Macros for reading and loading PKA memory data     *
  ******************************************************/
-void rk_pka_hw_load_value2pka_mem(u32 addr, u32 val);
-
 void rk_pka_hw_load_block2pka_mem(u32 addr, u32 *ptr,
 				  u32 size_words);
 
-void rk_pka_hw_reverse_load_block2pka_mem(u32 addr, u32 *ptr,
-					  u32 size_words);
-
 void rk_pka_hw_clear_pka_mem(u32 addr, u32 size_words);
-
-void rk_pka_hw_read_value_from_pka_mem(u32 addr, u32 *val);
 
 void rk_pka_hw_read_block_from_pka_mem(u32 addr, u32 *ptr,
 				       u32 size_words);
 
-void rk_pka_hw_reverse_read_block_from_pka_mem(u32 addr, u32 *ptr,
-					       u32 size_words);
-
-u32 rk_pka_exec_operation(u32 opcode, u8 len_id,
-			  u8 is_a_immed, s8 op_a,
-			  u8 is_b_immed, s8 op_b,
-			  u8	res_discard, s8 res, u8 tag);
+void rk_pka_exec_operation(u32 opcode, u8 len_id,
+			   u8 is_a_immed, s8 op_a,
+			   u8 is_b_immed, s8 op_b,
+			   u8 res_discard, s8 res, u8 tag);
 
 /*************************************************************************
  * Macros for calling PKA operations (names according to operation issue *
@@ -335,8 +296,8 @@ u32 rk_pka_exec_operation(u32 opcode, u8 len_id,
 
 /*	Clr:  res =  op_a & 0  - clears the operand A.  */
 #define   RK_PKA_Clr(len_id, op_a, tag)   \
-			rk_pka_exec_operation(PKA_AND, (len_id), 0, (op_a), \
-					      1, 0x00, 0, (op_a), (tag))
+			rk_pka_exec_operation(PKA_AND, (len_id), 0U, (op_a), \
+					      1U, 0x00, 0U, (op_a), (tag))
 
 /*	Clear:	for full clearing the actual register op_a,
  *	this macro calls Clr operation twice.
@@ -346,7 +307,7 @@ u32 rk_pka_exec_operation(u32 opcode, u8 len_id,
 
 /*	OR:  res =	op_a || op_b	*/
 #define   RK_PKA_OR(len_id, op_a, op_b, res, tag)   \
-			rk_pka_exec_operation(PKA_OR, (len_id), 0, (op_a), \
+			rk_pka_exec_operation(PKA_OR, (len_id), 0, (s8)(op_a), \
 					      0, (op_b), 0, (res), (tag))
 
 /*	OrIm:  res =  op_a || op_b  */
@@ -356,8 +317,8 @@ u32 rk_pka_exec_operation(u32 opcode, u8 len_id,
 
 /*	Copy:  OpDest =  OpSrc || 0  */
 #define   RK_PKA_Copy(len_id, op_dest, op_src, tag)   \
-			rk_pka_exec_operation(PKA_OR, (len_id), 0, (op_src), \
-					      1, 0x00, 0, (op_dest), (tag))
+			rk_pka_exec_operation(PKA_OR, (u8)(len_id), 0U, (s8)(op_src), \
+					      1U, 0x00, 0U, (s8)(op_dest), (s8)(tag))
 
 /*	Set0:  res =  op_a || 1	: set bit0 = 1, other bits are not changed */
 #define   RK_PKA_Set0(len_id, op_a, res, tag)   \
@@ -471,9 +432,20 @@ u32 rk_pka_exec_operation(u32 opcode, u8 len_id,
 					      0, (op_b), 0, (res), (tag))
 
 /*	Divide:  res =	op_a / op_b , op_a = op_a mod op_b - division,  */
-#define   RK_PKA_Div(len_id, op_a, op_b, res, tag)   \
-			rk_pka_exec_operation(PKA_Div, (len_id), 0, (op_a), \
-					      0, (op_b), 0, (res), (tag))
+static __inline u32 RK_PKA_Div(u8 len_id, s8 op_a, s8 op_b, s8 res, u8 tag)
+{
+	u32 error = 0U;
+	u32 status;
+
+	rk_pka_exec_operation(PKA_Div, len_id, 0, op_a, 0, op_b, 0, res, tag);
+
+	rk_pka_get_status_div_byzero(&status);
+	if (status == 1U) {
+		error = (u32)RK_PKA_DIVIDER_IS_NULL_ERROR;
+	}
+
+	return error;
+}
 
 /*	ModInv:  Modular inversion: calculates	 res = 1/op_b mod N	*/
 #define   RK_PKA_ModInv(len_id, op_b, res, tag)   \
@@ -494,37 +466,23 @@ struct rk_pka_regs_map {
 	u32 regs_addr[RK_PKA_MAX_PHYS_MEM_REGS_COUNT];
 };
 
-u32 rk_pka_set_sizes_tab(u32 regs_sizes_ptr[RK_PKA_MAX_REGS_COUNT],
-			 u32 count_of_sizes,
-			 u32 max_size_bits,
-			 u32 is_default_map);
+u32 rk_pka_set_sizes_tab(u32 max_size_bits);
 
 #define RK_PKA_DefaultSetRegsSizesTab(max_size_bits) \
-			rk_pka_set_sizes_tab(0, 0, (max_size_bits), 1)
-u32 rk_pka_set_map_tab(struct rk_pka_regs_map *regs_map_ptr, u32 *count_of_regs,
-		       u32 maxsize_words, u32 N_NP_T0_T1,
-		       u32 is_default_map);
+			rk_pka_set_sizes_tab((max_size_bits))
+u32 rk_pka_set_map_tab(u8 *count_of_regs, u32 maxsize_words);
 
 #define RK_PKA_DefaultSetRegsMapTab(maxsize_words, count_of_regs) \
-			rk_pka_set_map_tab(NULL, (count_of_regs), \
-					   (maxsize_words), 0, 1)
+			rk_pka_set_map_tab((count_of_regs), (maxsize_words))
 
-u32 rk_pka_clear_block_of_regs(u8 first_reg, u8 count_of_regs, u8 len_id);
+void rk_pka_clear_block_of_regs(u8 first_reg, u8 count_of_regs, u8 len_id);
 
-u32 rk_pka_init(u32 regs_sizes_ptr[RK_PKA_MAX_REGS_COUNT],
-		u32 count_of_sizes,
-		struct rk_pka_regs_map *regs_map_ptr,
-		u32 count_of_regs,
-		u32 op_size_bits,
-		u32 regsize_words,
-		u32 N_NP_T0_T1,
-		u32 is_default_map);
+u32 rk_pka_init(u32 op_size_bits, u32 regsize_words);
 #define RK_PKA_DefaultInitPKA(max_size_bits, regsize_words) \
-			rk_pka_init(0, 0, 0, 0, (max_size_bits), \
-				    (regsize_words), 0, 1)
+			rk_pka_init((max_size_bits), (regsize_words))
 
 void rk_pka_finish(void);
-u32 rk_pka_calcNp_and_initmodop(u32 len_id, u32 mod_size_bits,
+u32 rk_pka_calcNp_and_initmodop(u8 len_id, u32 mod_size_bits,
 				s8 r_t0, s8 r_t1, s8 r_t2);
 
 u32 rk_pka_div_long_num(u8 len_id, s8 op_a, u32 s, s8 op_b,
@@ -538,10 +496,8 @@ void rk_pka_copy_data_into_reg(s8 dst_reg, u8 len_id, u32 *src_ptr,
 			       u32 size_words);
 void rk_pka_copy_data_from_reg(u32 *dst_ptr, u32  size_words,
 			       s8 src_reg);
-int test_rk3326_rsa(void);
-int rk_abs_add(void *a, void *b, void *c);
+
 int rk_mod(void *a, void *b, void *c);
-int rk_exptmod(void *a, void *b, void *c, void *d);
 int rk_exptmod_np(void *m, void *e, void *n, void *np, void *d);
 
 #endif
