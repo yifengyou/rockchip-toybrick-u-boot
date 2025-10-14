@@ -43,45 +43,64 @@ const static u8 null_hash_sm3_value[] = {
 
 u32 crypto_algo_nbits(u32 algo)
 {
+	u32 nbits;
+
 	switch (algo) {
 	case CRYPTO_MD5:
 	case CRYPTO_HMAC_MD5:
-		return 128;
+		nbits = 128;
+		break;
 	case CRYPTO_SHA1:
 	case CRYPTO_HMAC_SHA1:
-		return 160;
+		nbits = 160;
+		break;
 	case CRYPTO_SHA256:
 	case CRYPTO_HMAC_SHA256:
-		return 256;
+		nbits = 256;
+		break;
 	case CRYPTO_SHA512:
 	case CRYPTO_HMAC_SHA512:
-		return 512;
+		nbits = 512;
+		break;
 	case CRYPTO_SM3:
 	case CRYPTO_HMAC_SM3:
-		return 256;
+		nbits = 256;
+		break;
 	case CRYPTO_RSA512:
-		return 512;
+		nbits = 512;
+		break;
 	case CRYPTO_RSA1024:
-		return 1024;
+		nbits = 1024;
+		break;
 	case CRYPTO_RSA2048:
-		return 2048;
+		nbits = 2048;
+		break;
 	case CRYPTO_RSA3072:
-		return 3072;
+		nbits = 3072;
+		break;
 	case CRYPTO_RSA4096:
-		return 4096;
+		nbits = 4096;
+		break;
 	case CRYPTO_SM2:
-		return 256;
+		nbits = 256;
+		break;
 	case CRYPTO_ECC_192R1:
-		return 192;
+		nbits = 192;
+		break;
 	case CRYPTO_ECC_224R1:
-		return 224;
+		nbits = 224;
+		break;
 	case CRYPTO_ECC_256R1:
-		return 256;
+		nbits = 256;
+		break;
+	default:
+		nbits = 0;
+		break;
 	}
 
 	printf("Unknown crypto algorithm: 0x%x\n", algo);
 
-	return 0;
+	return nbits;
 }
 
 struct udevice *crypto_get_device(u32 capability)
@@ -93,19 +112,22 @@ struct udevice *crypto_get_device(u32 capability)
 	u32 cap;
 
 	ret = uclass_get(UCLASS_CRYPTO, &uc);
-	if (ret)
+	if (ret != 0) {
 		return NULL;
+	}
 
 	for (uclass_first_device(UCLASS_CRYPTO, &dev);
 	     dev;
 	     uclass_next_device(&dev)) {
 		ops = device_get_ops(dev);
-		if (!ops || !ops->capability)
+		if (!ops || ops->capability == NULL) {
 			continue;
+		}
 
 		cap = ops->capability(dev);
-		if ((cap & capability) == capability)
+		if ((cap & capability) == capability) {
 			return dev;
+		}
 	}
 
 	return NULL;
@@ -115,11 +137,13 @@ int crypto_sha_init(struct udevice *dev, sha_context *ctx)
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (ctx && !ctx->length)
+	if (ctx && ctx->length == 0U) {
 		return 0;
+	}
 
-	if (!ops || !ops->sha_init)
+	if (!ops || ops->sha_init == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->sha_init(dev, ctx);
 }
@@ -128,11 +152,13 @@ int crypto_sha_update(struct udevice *dev, u32 *input, u32 len)
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (!len)
+	if (len == 0U) {
 		return 0;
+	}
 
-	if (!ops || !ops->sha_update)
+	if (!ops || ops->sha_update == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->sha_update(dev, input, len);
 }
@@ -140,10 +166,11 @@ int crypto_sha_update(struct udevice *dev, u32 *input, u32 len)
 int crypto_sha_final(struct udevice *dev, sha_context *ctx, u8 *output)
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
-	const u8 *null_hash = NULL;
-	u32 hash_size = 0;
 
-	if (ctx && !ctx->length && output) {
+	if (ctx && (ctx->length == 0U) && output) {
+		const u8 *null_hash;
+		u32 hash_size;
+
 		switch (ctx->algo) {
 		case CRYPTO_MD5:
 			null_hash = null_hash_md5_value;
@@ -166,6 +193,11 @@ int crypto_sha_final(struct udevice *dev, sha_context *ctx, u8 *output)
 			hash_size = sizeof(null_hash_sm3_value);
 			break;
 		default:
+			null_hash = NULL;
+			break;
+		}
+
+		if (!null_hash) {
 			return -EINVAL;
 		}
 
@@ -174,8 +206,9 @@ int crypto_sha_final(struct udevice *dev, sha_context *ctx, u8 *output)
 		return 0;
 	}
 
-	if (!ops || !ops->sha_final)
+	if (!ops || ops->sha_final == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->sha_final(dev, ctx, output);
 }
@@ -185,11 +218,13 @@ int crypto_hmac_init(struct udevice *dev, sha_context *ctx,
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (ctx && !ctx->length)
+	if (ctx && (ctx->length == 0U)) {
 		return -EINVAL;
+	}
 
-	if (!ops || !ops->hmac_init)
+	if (!ops || ops->hmac_init == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->hmac_init(dev, ctx, key, key_len);
 }
@@ -198,11 +233,13 @@ int crypto_hmac_update(struct udevice *dev, u32 *input, u32 len)
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (!len)
+	if (len == 0U) {
 		return 0;
+	}
 
-	if (!ops || !ops->hmac_update)
+	if (!ops || ops->hmac_update == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->hmac_update(dev, input, len);
 }
@@ -211,8 +248,9 @@ int crypto_hmac_final(struct udevice *dev, sha_context *ctx, u8 *output)
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (!ops || !ops->hmac_final)
+	if (!ops || ops->hmac_final == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->hmac_final(dev, ctx, output);
 }
@@ -223,12 +261,14 @@ int crypto_sha_csum(struct udevice *dev, sha_context *ctx,
 	int ret;
 
 	ret = crypto_sha_init(dev, ctx);
-	if (ret)
+	if (ret != 0) {
 		return ret;
+	}
 
-	ret = crypto_sha_update(dev, (u32 *)input, input_len);
-	if (ret)
+	ret = crypto_sha_update(dev, (u32 *)(void *)input, input_len);
+	if (ret != 0) {
 		return ret;
+	}
 
 	ret = crypto_sha_final(dev, ctx, output);
 
@@ -242,18 +282,20 @@ int crypto_sha_regions_csum(struct udevice *dev, sha_context *ctx,
 	int i, ret;
 
 	ctx->length = 0;
-	for (i = 0; i < region_count; i++)
-		ctx->length += region[i].size;
+	for (i = 0; i < region_count; i++) {
+		ctx->length += (u32)region[i].size;
+	}
 
 	ret = crypto_sha_init(dev, ctx);
-	if (ret)
+	if (ret != 0) {
 		return ret;
+	}
 
 	for (i = 0; i < region_count; i++) {
-		ret = crypto_sha_update(dev, (void *)region[i].data,
-					region[i].size);
-		if (ret)
+		ret = crypto_sha_update(dev, (void *)region[i].data, (u32)region[i].size);
+		if (ret != 0) {
 			return ret;
+		}
 	}
 
 	return crypto_sha_final(dev, ctx, output);
@@ -263,11 +305,13 @@ int crypto_rsa_verify(struct udevice *dev, rsa_key *ctx, u8 *sign, u8 *output)
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (!ops || !ops->rsa_verify)
+	if (!ops || ops->rsa_verify == NULL) {
 		return -ENOSYS;
+	}
 
-	if (!ctx || !ctx->n || !ctx->e || !sign || !output)
+	if (!ctx || !ctx->n || !ctx->e || !sign || !output) {
 		return -EINVAL;
+	}
 
 	return ops->rsa_verify(dev, ctx, sign, output);
 }
@@ -276,11 +320,13 @@ int crypto_ec_verify(struct udevice *dev, ec_key *ctx, u8 *hash, u32 hash_len, u
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (!ops || !ops->ec_verify)
+	if (!ops || ops->ec_verify == NULL) {
 		return -ENOSYS;
+	}
 
-	if (!ctx || !ctx->x || !ctx->y || !ctx->y || !hash || hash_len == 0 || !sign)
+	if (!ctx || !ctx->x || !ctx->y || !hash || hash_len == 0U || !sign) {
 		return -EINVAL;
+	}
 
 	return ops->ec_verify(dev, ctx, hash, hash_len, sign);
 }
@@ -290,8 +336,9 @@ int crypto_cipher(struct udevice *dev, cipher_context *ctx,
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (!ops || !ops->cipher_crypt)
+	if (!ops || ops->cipher_crypt == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->cipher_crypt(dev, ctx, in, out, len, enc);
 }
@@ -301,8 +348,9 @@ int crypto_mac(struct udevice *dev, cipher_context *ctx,
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (!ops || !ops->cipher_mac)
+	if (!ops || ops->cipher_mac == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->cipher_mac(dev, ctx, in, len, tag);
 }
@@ -313,8 +361,9 @@ int crypto_ae(struct udevice *dev, cipher_context *ctx,
 {
 	const struct dm_crypto_ops *ops = device_get_ops(dev);
 
-	if (!ops || !ops->cipher_ae)
+	if (!ops || ops->cipher_ae == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->cipher_ae(dev, ctx, in, len, aad, aad_len, out, tag);
 }
