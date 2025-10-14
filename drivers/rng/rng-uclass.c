@@ -11,8 +11,9 @@ int dm_rng_read(struct udevice *dev, void *buffer, size_t size)
 {
 	const struct dm_rng_ops *ops = device_get_ops(dev);
 
-	if (!ops->read)
+	if (ops->read == NULL) {
 		return -ENOSYS;
+	}
 
 	return ops->read(dev, buffer, size);
 }
