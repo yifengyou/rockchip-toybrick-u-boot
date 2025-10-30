@@ -20,7 +20,7 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
  * OF THIS SOFTWARE.
  */
-
+// PRQA S 5124 ++
 #include <common.h>
 #include <drm/drm_dp_helper.h>
 
@@ -36,17 +36,21 @@
 /* Helpers for DP link training */
 static u8 dp_link_status(const u8 link_status[DP_LINK_STATUS_SIZE], int r)
 {
+	if (r - DP_LANE0_1_STATUS < 0 || r - DP_LANE0_1_STATUS > 5) {
+		return 0U;
+	}
+
 	return link_status[r - DP_LANE0_1_STATUS];
 }
 
 static u8 dp_get_lane_status(const u8 link_status[DP_LINK_STATUS_SIZE],
 			     int lane)
 {
-	int i = DP_LANE0_1_STATUS + (lane >> 1);
-	int s = (lane & 1) * 4;
-	u8 l = dp_link_status(link_status, i);
+	u32 i = (u32)DP_LANE0_1_STATUS + ((u32)lane >> 1U);
+	u32 s = ((u32)lane & 1U) * 4U;
+	u8 l = dp_link_status(link_status, (int)i);
 
-	return (l >> s) & 0xf;
+	return (l >> s) & 0xfU;
 }
 
 bool drm_dp_channel_eq_ok(const u8 link_status[DP_LINK_STATUS_SIZE],
@@ -58,12 +62,14 @@ bool drm_dp_channel_eq_ok(const u8 link_status[DP_LINK_STATUS_SIZE],
 
 	lane_align = dp_link_status(link_status,
 				    DP_LANE_ALIGN_STATUS_UPDATED);
-	if ((lane_align & DP_INTERLANE_ALIGN_DONE) == 0)
+	if ((lane_align & (u8)DP_INTERLANE_ALIGN_DONE) == 0U) {
 		return false;
+	}
 	for (lane = 0; lane < lane_count; lane++) {
 		lane_status = dp_get_lane_status(link_status, lane);
-		if ((lane_status & DP_CHANNEL_EQ_BITS) != DP_CHANNEL_EQ_BITS)
+		if ((lane_status & (u8)DP_CHANNEL_EQ_BITS) != (u8)DP_CHANNEL_EQ_BITS) {
 			return false;
+		}
 	}
 	return true;
 }
@@ -76,8 +82,9 @@ bool drm_dp_clock_recovery_ok(const u8 link_status[DP_LINK_STATUS_SIZE],
 
 	for (lane = 0; lane < lane_count; lane++) {
 		lane_status = dp_get_lane_status(link_status, lane);
-		if ((lane_status & DP_LANE_CR_DONE) == 0)
+		if ((lane_status & (u8)DP_LANE_CR_DONE) == 0U) {
 			return false;
+		}
 	}
 	return true;
 }
@@ -85,65 +92,69 @@ bool drm_dp_clock_recovery_ok(const u8 link_status[DP_LINK_STATUS_SIZE],
 u8 drm_dp_get_adjust_request_voltage(const u8 link_status[DP_LINK_STATUS_SIZE],
 				     int lane)
 {
-	int i = DP_ADJUST_REQUEST_LANE0_1 + (lane >> 1);
-	int s = ((lane & 1) ?
-		 DP_ADJUST_VOLTAGE_SWING_LANE1_SHIFT :
-		 DP_ADJUST_VOLTAGE_SWING_LANE0_SHIFT);
-	u8 l = dp_link_status(link_status, i);
+	u32 i = (u32)DP_ADJUST_REQUEST_LANE0_1 + ((u32)lane >> 1U);
+	u32 s = (((u32)lane & 1U) != 0U ?
+		 (u32)DP_ADJUST_VOLTAGE_SWING_LANE1_SHIFT :
+		 (u32)DP_ADJUST_VOLTAGE_SWING_LANE0_SHIFT);
+	u8 l = dp_link_status(link_status, (int)i);
 
-	return ((l >> s) & 0x3) << DP_TRAIN_VOLTAGE_SWING_SHIFT;
+	return ((l >> s) & 0x3U) << (u8)DP_TRAIN_VOLTAGE_SWING_SHIFT;
 }
 
 u8 drm_dp_get_adjust_request_pre_emphasis(const u8 link_status[DP_LINK_STATUS_SIZE],
 					  int lane)
 {
-	int i = DP_ADJUST_REQUEST_LANE0_1 + (lane >> 1);
-	int s = ((lane & 1) ?
-		 DP_ADJUST_PRE_EMPHASIS_LANE1_SHIFT :
-		 DP_ADJUST_PRE_EMPHASIS_LANE0_SHIFT);
-	u8 l = dp_link_status(link_status, i);
+	u32 i = (u32)DP_ADJUST_REQUEST_LANE0_1 + ((u32)lane >> 1U);
+	u32 s = (((u32)lane & 1U) != 0U ?
+		 (u32)DP_ADJUST_PRE_EMPHASIS_LANE1_SHIFT :
+		 (u32)DP_ADJUST_PRE_EMPHASIS_LANE0_SHIFT);
+	u8 l = dp_link_status(link_status, (int)i);
 
-	return ((l >> s) & 0x3) << DP_TRAIN_PRE_EMPHASIS_SHIFT;
+	return ((l >> s) & 0x3U) << (u8)DP_TRAIN_PRE_EMPHASIS_SHIFT;
 }
 
 void drm_dp_link_train_clock_recovery_delay(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 {
-	int rd_interval = dpcd[DP_TRAINING_AUX_RD_INTERVAL] &
-			  DP_TRAINING_AUX_RD_MASK;
+	u8 rd_interval = dpcd[DP_TRAINING_AUX_RD_INTERVAL] &
+			  (u8)DP_TRAINING_AUX_RD_MASK;
 
-	if (rd_interval > 4)
-		printf("AUX interval %d, out of range (max 4)\n", rd_interval);
+	if (rd_interval > 4U) {
+		(void)printf("AUX interval %d, out of range (max 4)\n", rd_interval);
+	}
 
-	if (rd_interval == 0 || dpcd[DP_DPCD_REV] >= DP_DPCD_REV_14)
+	if (rd_interval == 0U || dpcd[DP_DPCD_REV] >= (u8)DP_DPCD_REV_14) {
 		udelay(100);
-	else
-		mdelay(rd_interval * 4);
+	} else {
+		mdelay((unsigned long)rd_interval * 4UL);
+	}
 }
 
 void drm_dp_link_train_channel_eq_delay(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 {
-	int rd_interval = dpcd[DP_TRAINING_AUX_RD_INTERVAL] &
-			  DP_TRAINING_AUX_RD_MASK;
+	u8 rd_interval = dpcd[DP_TRAINING_AUX_RD_INTERVAL] &
+			  (u8)DP_TRAINING_AUX_RD_MASK;
 
-	if (rd_interval > 4)
-		printf("AUX interval %d, out of range (max 4)\n", rd_interval);
+	if (rd_interval > 4U) {
+		(void)printf("AUX interval %d, out of range (max 4)\n", rd_interval);
+	}
 
-	if (rd_interval == 0)
+	if (rd_interval == 0U) {
 		udelay(400);
-	else
-		mdelay(rd_interval * 4);
+	} else {
+		mdelay((unsigned long)rd_interval * 4UL);
+	}
 }
 
 u8 drm_dp_link_rate_to_bw_code(int link_rate)
 {
 	/* Spec says link_bw = link_rate / 0.27Gbps */
-	return link_rate / 27000;
+	return (u8)((u32)link_rate / 27000U);
 }
 
 int drm_dp_bw_code_to_link_rate(u8 link_bw)
 {
 	/* Spec says link_rate = link_bw * 0.27Gbps */
-	return link_bw * 27000;
+	return (int)link_bw * 27000;
 }
 
 #define AUX_RETRY_INTERVAL 500 /* us */
@@ -155,7 +166,7 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
 	unsigned int retry, native_reply;
 	int err = 0, ret = 0;
 
-	memset(&msg, 0, sizeof(msg));
+	(void)memset(&msg, 0, sizeof(msg));
 	msg.address = offset;
 	msg.request = request;
 	msg.buffer = buffer;
@@ -167,16 +178,18 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
 	 * aux i2c transactions but real world devices this wasn't
 	 * sufficient, bump to 32 which makes Dell 4k monitors happier.
 	 */
-	for (retry = 0; retry < 32; retry++) {
-		if (ret != 0 && ret != -ETIMEDOUT)
+	for (retry = 0; retry < 32U; retry++) {
+		if (ret != 0 && ret != -ETIMEDOUT) {
 			udelay(AUX_RETRY_INTERVAL);
+		}
 
-		ret = aux->transfer(aux, &msg);
+		ret = (int)aux->transfer(aux, &msg);
 		if (ret >= 0) {
-			native_reply = msg.reply & DP_AUX_NATIVE_REPLY_MASK;
-			if (native_reply == DP_AUX_NATIVE_REPLY_ACK) {
-				if (ret == size)
+			native_reply = (unsigned int)msg.reply & (unsigned int)DP_AUX_NATIVE_REPLY_MASK;
+			if (native_reply == (unsigned int)DP_AUX_NATIVE_REPLY_ACK) {
+				if ((size_t)ret == size) {
 					goto out;
+				}
 
 				ret = -EPROTO;
 			} else {
@@ -189,11 +202,12 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
 		 * the first transaction, since we may get a different error the
 		 * next time we retry
 		 */
-		if (!err)
+		if (err == 0) {
 			err = ret;
+		}
 	}
 
-	printf("%s: Too many retries, giving up. First error: %d\n",
+	(void)printf("%s: Too many retries, giving up. First error: %d\n",
 	       aux->name, err);
 	ret = err;
 
@@ -208,8 +222,9 @@ ssize_t drm_dp_dpcd_read(struct drm_dp_aux *aux, unsigned int offset,
 
 	ret = drm_dp_dpcd_access(aux, DP_AUX_NATIVE_READ, DP_DPCD_REV,
 				 buffer, 1);
-	if (ret != 1)
+	if (ret != 1) {
 		goto out;
+	}
 
 	ret = drm_dp_dpcd_access(aux, DP_AUX_NATIVE_READ, offset,
 				 buffer, size);
@@ -232,7 +247,7 @@ ssize_t drm_dp_dpcd_write(struct drm_dp_aux *aux, unsigned int offset,
 int drm_dp_dpcd_read_link_status(struct drm_dp_aux *aux,
 				 u8 status[DP_LINK_STATUS_SIZE])
 {
-	return drm_dp_dpcd_read(aux, DP_LANE0_1_STATUS, status,
+	return (int)drm_dp_dpcd_read(aux, DP_LANE0_1_STATUS, status,
 				DP_LINK_STATUS_SIZE);
 }
 
@@ -249,30 +264,34 @@ static int drm_dp_read_extended_dpcd_caps(struct drm_dp_aux *aux,
 	 * the true capability of the panel. The only way to check is to
 	 * then compare 0000h and 2200h.
 	 */
-	if (!(dpcd[DP_TRAINING_AUX_RD_INTERVAL] &
-	      DP_EXTENDED_RECEIVER_CAP_FIELD_PRESENT))
+	if ((dpcd[DP_TRAINING_AUX_RD_INTERVAL] &
+	      (u8)DP_EXTENDED_RECEIVER_CAP_FIELD_PRESENT) == 0U) {
 		return 0;
+	}
 
-	ret = drm_dp_dpcd_read(aux, DP_DP13_DPCD_REV, &dpcd_ext,
+	ret = (int)drm_dp_dpcd_read(aux, DP_DP13_DPCD_REV, &dpcd_ext,
 			       sizeof(dpcd_ext));
-	if (ret < 0)
+	if (ret < 0) {
 		return ret;
-	if (ret != sizeof(dpcd_ext))
+	}
+	if (ret != (int)sizeof(dpcd_ext)) {
 		return -EIO;
+	}
 
 	if (dpcd[DP_DPCD_REV] > dpcd_ext[DP_DPCD_REV]) {
-		printf("%s: Extended DPCD rev less than base DPCD rev (%d > %d)\n",
+		(void)printf("%s: Extended DPCD rev less than base DPCD rev (%d > %d)\n",
 		       aux->name, dpcd[DP_DPCD_REV], dpcd_ext[DP_DPCD_REV]);
 		return 0;
 	}
 
-	if (!memcmp(dpcd, dpcd_ext, sizeof(dpcd_ext)))
+	if (memcmp(dpcd, dpcd_ext, sizeof(dpcd_ext)) != 0) {
 		return 0;
+	}
 
-	debug("%s: Base DPCD: %*ph\n",
+	(void)printf("%s: Base DPCD: %*ph\n",
 	       aux->name, DP_RECEIVER_CAP_SIZE, dpcd);
 
-	memcpy(dpcd, dpcd_ext, sizeof(dpcd_ext));
+	(void)memcpy(dpcd, dpcd_ext, sizeof(dpcd_ext));
 
 	return 0;
 }
@@ -282,17 +301,20 @@ int drm_dp_read_dpcd_caps(struct drm_dp_aux *aux,
 {
 	int ret;
 
-	ret = drm_dp_dpcd_read(aux, DP_DPCD_REV, dpcd, DP_RECEIVER_CAP_SIZE);
-	if (ret < 0)
+	ret = (int)drm_dp_dpcd_read(aux, DP_DPCD_REV, dpcd, DP_RECEIVER_CAP_SIZE);
+	if (ret < 0) {
 		return ret;
-	if (ret != DP_RECEIVER_CAP_SIZE || dpcd[DP_DPCD_REV] == 0)
+	}
+	if (ret != DP_RECEIVER_CAP_SIZE || dpcd[DP_DPCD_REV] == 0U) {
 		return -EIO;
+	}
 
 	ret = drm_dp_read_extended_dpcd_caps(aux, dpcd);
-	if (ret < 0)
+	if (ret < 0) {
 		return ret;
+	}
 
-	debug("%s: DPCD: %*ph\n",
+	(void)printf("%s: DPCD: %*ph\n",
 	       aux->name, DP_RECEIVER_CAP_SIZE, dpcd);
 
 	return ret;
@@ -305,16 +327,16 @@ static void drm_dp_i2c_msg_write_status_update(struct drm_dp_aux_msg *msg)
 	 * we need to switch to WRITE_STATUS_UPDATE to drain the
 	 * rest of the message
 	 */
-	if ((msg->request & ~DP_AUX_I2C_MOT) == DP_AUX_I2C_WRITE) {
-		msg->request &= DP_AUX_I2C_MOT;
-		msg->request |= DP_AUX_I2C_WRITE_STATUS_UPDATE;
+	if ((msg->request & (~(u8)DP_AUX_I2C_MOT)) == (u8)DP_AUX_I2C_WRITE) {
+		msg->request &= (u8)DP_AUX_I2C_MOT;
+		msg->request |= (u8)DP_AUX_I2C_WRITE_STATUS_UPDATE;
 	}
 }
 
 static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 {
-	unsigned int retry, defer_i2c;
-	int ret;
+	unsigned int retry, defer_i2c = 0U;
+	int ret, ret1;
 	/*
 	 * DP1.2 sections 2.7.7.1.5.6.1 and 2.7.7.1.6.6.1: A DP Source device
 	 * is required to retry at least seven times upon receiving AUX_DEFER
@@ -324,12 +346,14 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 	 */
 	int max_retries = 7;
 
-	for (retry = 0, defer_i2c = 0; retry < (max_retries + defer_i2c);
+	for (retry = 0U; retry < ((unsigned int)max_retries + defer_i2c);
 	     retry++) {
-		ret = aux->transfer(aux, msg);
+		ret = (int)aux->transfer(aux, msg);
+		ret1 = 0;
 		if (ret < 0) {
-			if (ret == -EBUSY)
+			if (ret == -EBUSY) {
 				continue;
+			}
 
 			/*
 			 * While timeouts can be errors, they're usually normal
@@ -337,12 +361,13 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 			 * communicate with a non-existent DisplayPort device).
 			 * Avoid spamming the kernel log with timeout errors.
 			 */
-			if (ret == -ETIMEDOUT)
-				printf("%s: transaction timed out\n",
+			if (ret == -ETIMEDOUT) {
+				(void)printf("%s: transaction timed out\n",
 				       aux->name);
-			else
-				printf("%s: transaction failed: %d\n",
+			} else {
+				(void)printf("%s: transaction failed: %d\n",
 				       aux->name, ret);
+			}
 			return ret;
 		}
 
@@ -355,12 +380,13 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 			break;
 
 		case DP_AUX_NATIVE_REPLY_NACK:
-			printf("%s: native nack (result=%d, size=%zu)\n",
+			(void)printf("%s: native nack (result=%d, size=%zu)\n",
 			       aux->name, ret, msg->size);
-			return -EREMOTEIO;
+			ret1 = -EREMOTEIO;
+			break;
 
 		case DP_AUX_NATIVE_REPLY_DEFER:
-			printf("%s: native defer\n", aux->name);
+			(void)printf("%s: native defer\n", aux->name);
 			/*
 			 * We could check for I2C bit rate capabilities and if
 			 * available adjust this interval. We could also be
@@ -371,12 +397,21 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 			 * safe for all use-cases.
 			 */
 			udelay(AUX_RETRY_INTERVAL);
-			continue;
+			ret1 = 1;
+			break;
 
 		default:
-			printf("%s: invalid native reply %#04x\n",
+			(void)printf("%s: invalid native reply %#04x\n",
 			       aux->name, msg->reply);
-			return -EREMOTEIO;
+			ret1 = -EREMOTEIO;
+			break;
+		}
+		if (ret1 < 0) {
+			return ret1;
+		} else if (ret1 == 1) {
+			continue;
+		} else {
+			(void)0;
 		}
 
 		switch (msg->reply & DP_AUX_I2C_REPLY_MASK) {
@@ -385,48 +420,62 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 			 * Both native ACK and I2C ACK replies received. We
 			 * can assume the transfer was successful.
 			 */
-			if (ret != msg->size)
+			if ((unsigned long)ret != msg->size) {
 				drm_dp_i2c_msg_write_status_update(msg);
-			return ret;
+			}
+			break;
 
 		case DP_AUX_I2C_REPLY_NACK:
-			printf("%s: I2C nack (result=%d, size=%zu)\n",
+			(void)printf("%s: I2C nack (result=%d, size=%zu)\n",
 			       aux->name, ret, msg->size);
 			aux->i2c_nack_count++;
-			return -EREMOTEIO;
+			ret1 = -EREMOTEIO;
+			break;
 
 		case DP_AUX_I2C_REPLY_DEFER:
-			printf("%s: I2C defer\n", aux->name);
+			(void)printf("%s: I2C defer\n", aux->name);
 			/* DP Compliance Test 4.2.2.5 Requirement:
 			 * Must have at least 7 retries for I2C defers on the
 			 * transaction to pass this test
 			 */
 			aux->i2c_defer_count++;
-			if (defer_i2c < 7)
+			if (defer_i2c < 7U) {
 				defer_i2c++;
+			}
 			udelay(AUX_RETRY_INTERVAL);
 			drm_dp_i2c_msg_write_status_update(msg);
-
-			continue;
+			ret1 = 1;
+			break;
 
 		default:
-			printf("%s: invalid I2C reply %#04x\n",
+			(void)printf("%s: invalid I2C reply %#04x\n",
 			       aux->name, msg->reply);
-			return -EREMOTEIO;
+			ret1 = -EREMOTEIO;
+			break;
 		}
+		if (ret1 < 0) {
+			return ret1;
+		} else if (ret1 == 1) {
+			continue;
+		} else {
+			(void)0;
+		}
+
+		return ret;
 	}
 
-	printf("%s: Too many retries, giving up\n", aux->name);
+	(void)printf("%s: Too many retries, giving up\n", aux->name);
 	return -EREMOTEIO;
 }
 
 static void drm_dp_i2c_msg_set_request(struct drm_dp_aux_msg *msg,
 				       const struct i2c_msg *i2c_msg)
 {
-	msg->request = (i2c_msg->flags & I2C_M_RD) ?
-		DP_AUX_I2C_READ : DP_AUX_I2C_WRITE;
-	if (!(i2c_msg->flags & I2C_M_STOP))
-		msg->request |= DP_AUX_I2C_MOT;
+	msg->request = (i2c_msg->flags & (unsigned int)I2C_M_RD) > 0U ?
+		(u8)DP_AUX_I2C_READ : (u8)DP_AUX_I2C_WRITE;
+	if ((i2c_msg->flags & (unsigned int)I2C_M_STOP) == 0U) {
+		msg->request |= (u8)DP_AUX_I2C_MOT;
+	}
 }
 
 /*
@@ -437,21 +486,22 @@ static void drm_dp_i2c_msg_set_request(struct drm_dp_aux_msg *msg,
 static int drm_dp_i2c_drain_msg(struct drm_dp_aux *aux,
 				struct drm_dp_aux_msg *orig_msg)
 {
-	int err, ret = orig_msg->size;
+	int err, ret = (int)orig_msg->size;
 	struct drm_dp_aux_msg msg = *orig_msg;
 
-	while (msg.size > 0) {
+	while (msg.size > 0U) {
 		err = drm_dp_i2c_do_msg(aux, &msg);
-		if (err <= 0)
+		if (err <= 0) {
 			return err == 0 ? -EPROTO : err;
+		}
 
-		if (err < msg.size && err < ret) {
-			printf("%s: Reply: requested %zu bytes got %d bytes\n",
+		if (err < (int)msg.size && err < ret) {
+			(void)printf("%s: Reply: requested %zu bytes got %d bytes\n",
 			       aux->name, msg.size, err);
 			ret = err;
 		}
 
-		msg.size -= err;
+		msg.size -= (unsigned long)err;
 		msg.buffer += err;
 	}
 
@@ -467,9 +517,9 @@ int drm_dp_i2c_xfer(struct ddc_adapter *adapter, struct i2c_msg *msgs,
 	struct drm_dp_aux_msg msg;
 	int err = 0;
 
-	memset(&msg, 0, sizeof(msg));
+	(void)memset(&msg, 0, sizeof(msg));
 
-	for (i = 0; i < num; i++) {
+	for (i = 0U; i < (unsigned int)num; i++) {
 		msg.address = msgs[i].addr;
 		drm_dp_i2c_msg_set_request(&msg, &msgs[i]);
 		/* Send a bare address packet to start the transaction.
@@ -486,14 +536,15 @@ int drm_dp_i2c_xfer(struct ddc_adapter *adapter, struct i2c_msg *msgs,
 		 */
 		drm_dp_i2c_msg_set_request(&msg, &msgs[i]);
 
-		if (err < 0)
+		if (err < 0) {
 			break;
+		}
 		/* We want each transaction to be as large as possible, but
 		 * we'll go to smaller sizes if the hardware gives us a
 		 * short reply.
 		 */
 		transfer_size = DP_AUX_MAX_PAYLOAD_BYTES;
-		for (j = 0; j < msgs[i].len; j += msg.size) {
+		for (j = 0; j < msgs[i].len; j += (unsigned int)msg.size) {
 			msg.buffer = msgs[i].buf + j;
 			msg.size = min(transfer_size, msgs[i].len - j);
 
@@ -505,24 +556,27 @@ int drm_dp_i2c_xfer(struct ddc_adapter *adapter, struct i2c_msg *msgs,
 			 */
 			drm_dp_i2c_msg_set_request(&msg, &msgs[i]);
 
-			if (err < 0)
+			if (err < 0) {
 				break;
-			transfer_size = err;
+			}
+			transfer_size = (unsigned int)err;
 		}
-		if (err < 0)
+		if (err < 0) {
 			break;
+		}
 	}
-	if (err >= 0)
+	if (err >= 0) {
 		err = num;
+	}
 	/* Send a bare address packet to close out the transaction.
 	 * Zero sized messages specify an address only (bare
 	 * address) transaction.
 	 */
-	msg.request &= ~DP_AUX_I2C_MOT;
+	msg.request &= ~(u8)DP_AUX_I2C_MOT;
 	msg.buffer = NULL;
 	msg.size = 0;
 	(void)drm_dp_i2c_do_msg(aux, &msg);
 
 	return err;
 }
-
+// PRQA S 5124 --
