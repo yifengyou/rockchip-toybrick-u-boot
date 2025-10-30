@@ -32,6 +32,7 @@ U_BOOT_DRIVER(rockchip_vp) = {
 	.of_match	= rockchip_vp_ids,
 };
 
+#ifdef CONFIG_DRM_ROCKCHIP_VOP
 static const struct rockchip_crtc rk3036_vop_data = {
 	.funcs = &rockchip_vop_funcs,
 	.data = &rk3036_vop,
@@ -117,6 +118,12 @@ static const struct rockchip_crtc rk3506_vop_data = {
 	.data = &rk3506_vop,
 };
 
+static const struct rockchip_crtc rk3576_vop_lit_data = {
+	.funcs = &rockchip_vop_funcs,
+	.data = &rk3576_vop_lit,
+};
+#endif
+
 static const struct rockchip_crtc rk3528_vop_data = {
 	.funcs = &rockchip_vop2_funcs,
 	.data = &rk3528_vop,
@@ -137,17 +144,13 @@ static const struct rockchip_crtc rk3576_vop_data = {
 	.data = &rk3576_vop,
 };
 
-static const struct rockchip_crtc rk3576_vop_lit_data = {
-	.funcs = &rockchip_vop_funcs,
-	.data = &rk3576_vop_lit,
-};
-
 static const struct rockchip_crtc rk3588_vop_data = {
 	.funcs = &rockchip_vop2_funcs,
 	.data = &rk3588_vop,
 };
 
 static const struct udevice_id rockchip_vop_ids[] = {
+#ifdef CONFIG_DRM_ROCKCHIP_VOP
 	{
 		.compatible = "rockchip,rk3036-vop",
 		.data = (ulong)&rk3036_vop_data,
@@ -203,6 +206,11 @@ static const struct udevice_id rockchip_vop_ids[] = {
 		.compatible = "rockchip,rk3506-vop",
 		.data = (ulong)&rk3506_vop_data,
 	}, {
+		.compatible = "rockchip,rk3576-vop-lit",
+		.data = (ulong)&rk3576_vop_lit_data,
+	},
+#endif
+	{
 		.compatible = "rockchip,rk3528-vop",
 		.data = (ulong)&rk3528_vop_data,
 	}, {
@@ -214,9 +222,6 @@ static const struct udevice_id rockchip_vop_ids[] = {
 	}, {
 		.compatible = "rockchip,rk3576-vop",
 		.data = (ulong)&rk3576_vop_data,
-	}, {
-		.compatible = "rockchip,rk3576-vop-lit",
-		.data = (ulong)&rk3576_vop_lit_data,
 	}, {
 		.compatible = "rockchip,rk3588-vop",
 		.data = (ulong)&rk3588_vop_data,

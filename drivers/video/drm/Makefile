@@ -8,7 +8,7 @@ obj-y += drm_modes.o
 
 ifndef CONFIG_SPL_BUILD
 obj-y += rockchip_display.o rockchip_display_helper.o rockchip_crtc.o rockchip_phy.o rockchip_bridge.o \
-		rockchip_vop.o rockchip_vop_reg.o rockchip_vop2.o bmp_helper.o \
+		rockchip_vop2.o bmp_helper.o \
 		rockchip_connector.o rockchip_post_csc.o libnsbmp.o
 
 obj-$(CONFIG_DRM_MIPI_DSI) += drm_mipi_dsi.o
@@ -41,6 +41,7 @@ obj-$(CONFIG_DRM_ROCKCHIP_RK1000) += rk1000.o rk1000_tve.o
 obj-$(CONFIG_DRM_ROCKCHIP_SAMSUNG_MIPI_DCPHY) += samsung_mipi_dcphy.o
 obj-$(CONFIG_DRM_SII902X) += sii902x.o
 obj-$(CONFIG_SERDES_DISPLAY) += display-serdes/
+obj-&(CONFIG_DRM_ROCKCHIP_VOP) += rockchip_vop.o rockchip_vop_reg.o
 else
 obj-y += rockchip_spl_display.o rockchip_display_helper.o rockchip_crtc.o rockchip_connector.o rockchip_post_csc.o rockchip_vop2.o rockchip_phy.o rockchip-inno-hdmi-phy.o rockchip_dw_hdmi.o dw_hdmi.o
 endif

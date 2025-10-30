@@ -242,5 +242,12 @@ config DRM_SII902X
 	help
 	  Silicon Image sii902x bridge chip driver.
 
+config DRM_ROCKCHIP_VOP
+	bool "Rockchip VOP Support"
+	depends on DRM_ROCKCHIP
+	help
+	  Choose this option to enable support for Rockchip VOP.
+	  Say Y to enable VOP driver.
+
 source "drivers/video/drm/display-serdes/Kconfig"
 
