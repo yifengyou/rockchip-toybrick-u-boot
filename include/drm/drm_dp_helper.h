@@ -48,11 +48,11 @@
 #define DP_MSA_MISC_STEREO_PROG_RIGHT_EYE	(1 << 9)
 #define DP_MSA_MISC_STEREO_PROG_LEFT_EYE	(3 << 9)
 /* bits per component for non-RAW */
-#define DP_MSA_MISC_6_BPC			(0 << 5)
-#define DP_MSA_MISC_8_BPC			(1 << 5)
-#define DP_MSA_MISC_10_BPC			(2 << 5)
-#define DP_MSA_MISC_12_BPC			(3 << 5)
-#define DP_MSA_MISC_16_BPC			(4 << 5)
+#define DP_MSA_MISC_6_BPC			(0U << 5U)
+#define DP_MSA_MISC_8_BPC			(1U << 5U)
+#define DP_MSA_MISC_10_BPC			(2U << 5U)
+#define DP_MSA_MISC_12_BPC			(3U << 5U)
+#define DP_MSA_MISC_16_BPC			(4U << 5U)
 /* bits per component for RAW */
 #define DP_MSA_MISC_RAW_6_BPC			(1 << 5)
 #define DP_MSA_MISC_RAW_7_BPC			(2 << 5)
@@ -63,25 +63,25 @@
 #define DP_MSA_MISC_RAW_16_BPC			(7 << 5)
 /* pixel encoding/colorimetry format */
 #define _DP_MSA_MISC_COLOR(misc1_7, misc0_21, misc0_3, misc0_4) \
-	((misc1_7) << 15 | (misc0_4) << 4 | (misc0_3) << 3 | ((misc0_21) << 1))
-#define DP_MSA_MISC_COLOR_RGB			_DP_MSA_MISC_COLOR(0, 0, 0, 0)
-#define DP_MSA_MISC_COLOR_CEA_RGB		_DP_MSA_MISC_COLOR(0, 0, 1, 0)
-#define DP_MSA_MISC_COLOR_RGB_WIDE_FIXED	_DP_MSA_MISC_COLOR(0, 3, 0, 0)
-#define DP_MSA_MISC_COLOR_RGB_WIDE_FLOAT	_DP_MSA_MISC_COLOR(0, 3, 0, 1)
-#define DP_MSA_MISC_COLOR_Y_ONLY		_DP_MSA_MISC_COLOR(1, 0, 0, 0)
-#define DP_MSA_MISC_COLOR_RAW			_DP_MSA_MISC_COLOR(1, 1, 0, 0)
-#define DP_MSA_MISC_COLOR_YCBCR_422_BT601	_DP_MSA_MISC_COLOR(0, 1, 1, 0)
-#define DP_MSA_MISC_COLOR_YCBCR_422_BT709	_DP_MSA_MISC_COLOR(0, 1, 1, 1)
-#define DP_MSA_MISC_COLOR_YCBCR_444_BT601	_DP_MSA_MISC_COLOR(0, 2, 1, 0)
-#define DP_MSA_MISC_COLOR_YCBCR_444_BT709	_DP_MSA_MISC_COLOR(0, 2, 1, 1)
-#define DP_MSA_MISC_COLOR_XVYCC_422_BT601	_DP_MSA_MISC_COLOR(0, 1, 0, 0)
-#define DP_MSA_MISC_COLOR_XVYCC_422_BT709	_DP_MSA_MISC_COLOR(0, 1, 0, 1)
-#define DP_MSA_MISC_COLOR_XVYCC_444_BT601	_DP_MSA_MISC_COLOR(0, 2, 0, 0)
-#define DP_MSA_MISC_COLOR_XVYCC_444_BT709	_DP_MSA_MISC_COLOR(0, 2, 0, 1)
-#define DP_MSA_MISC_COLOR_OPRGB			_DP_MSA_MISC_COLOR(0, 0, 1, 1)
-#define DP_MSA_MISC_COLOR_DCI_P3		_DP_MSA_MISC_COLOR(0, 3, 1, 0)
-#define DP_MSA_MISC_COLOR_COLOR_PROFILE		_DP_MSA_MISC_COLOR(0, 3, 1, 1)
-#define DP_MSA_MISC_COLOR_VSC_SDP		(1 << 14)
+	(((misc1_7) << 15U) | ((misc0_4) << 4U) | ((misc0_3) << 3U) | ((misc0_21) << 1U))
+#define DP_MSA_MISC_COLOR_RGB			_DP_MSA_MISC_COLOR((u32)0, (u32)0, (u32)0, (u32)0)
+#define DP_MSA_MISC_COLOR_CEA_RGB		_DP_MSA_MISC_COLOR((u32)0, (u32)0, (u32)1, (u32)0)
+#define DP_MSA_MISC_COLOR_RGB_WIDE_FIXED	_DP_MSA_MISC_COLOR((u32)0, (u32)3, (u32)0, (u32)0)
+#define DP_MSA_MISC_COLOR_RGB_WIDE_FLOAT	_DP_MSA_MISC_COLOR((u32)0, (u32)3, (u32)0, (u32)1)
+#define DP_MSA_MISC_COLOR_Y_ONLY		_DP_MSA_MISC_COLOR((u32)1, (u32)0, (u32)0, (u32)0)
+#define DP_MSA_MISC_COLOR_RAW			_DP_MSA_MISC_COLOR((u32)1, (u32)1, (u32)0, (u32)0)
+#define DP_MSA_MISC_COLOR_YCBCR_422_BT601	_DP_MSA_MISC_COLOR((u32)0, (u32)1, (u32)1, (u32)0)
+#define DP_MSA_MISC_COLOR_YCBCR_422_BT709	_DP_MSA_MISC_COLOR((u32)0, (u32)1, (u32)1, (u32)1)
+#define DP_MSA_MISC_COLOR_YCBCR_444_BT601	_DP_MSA_MISC_COLOR((u32)0, (u32)2, (u32)1, (u32)0)
+#define DP_MSA_MISC_COLOR_YCBCR_444_BT709	_DP_MSA_MISC_COLOR((u32)0, (u32)2, (u32)1, (u32)1)
+#define DP_MSA_MISC_COLOR_XVYCC_422_BT601	_DP_MSA_MISC_COLOR((u32)0, (u32)1, (u32)0, (u32)0)
+#define DP_MSA_MISC_COLOR_XVYCC_422_BT709	_DP_MSA_MISC_COLOR((u32)0, (u32)1, (u32)0, (u32)1)
+#define DP_MSA_MISC_COLOR_XVYCC_444_BT601	_DP_MSA_MISC_COLOR((u32)0, (u32)2, (u32)0, (u32)0)
+#define DP_MSA_MISC_COLOR_XVYCC_444_BT709	_DP_MSA_MISC_COLOR((u32)0, (u32)2, (u32)0, (u32)1)
+#define DP_MSA_MISC_COLOR_OPRGB			_DP_MSA_MISC_COLOR((u32)0, (u32)0, (u32)1, (u32)1)
+#define DP_MSA_MISC_COLOR_DCI_P3		_DP_MSA_MISC_COLOR((u32)0, (u32)3, (u32)1, (u32)0)
+#define DP_MSA_MISC_COLOR_COLOR_PROFILE		_DP_MSA_MISC_COLOR((u32)0, (u32)3, (u32)1, (u32)1)
+#define DP_MSA_MISC_COLOR_VSC_SDP		((u32)1 << 14U)
 
 #define DP_AUX_MAX_PAYLOAD_BYTES	16
 
@@ -92,15 +92,15 @@
 #define DP_AUX_NATIVE_WRITE		0x8
 #define DP_AUX_NATIVE_READ		0x9
 
-#define DP_AUX_NATIVE_REPLY_ACK		(0x0 << 0)
-#define DP_AUX_NATIVE_REPLY_NACK	(0x1 << 0)
-#define DP_AUX_NATIVE_REPLY_DEFER	(0x2 << 0)
-#define DP_AUX_NATIVE_REPLY_MASK	(0x3 << 0)
+#define DP_AUX_NATIVE_REPLY_ACK		(0x0U << 0U)
+#define DP_AUX_NATIVE_REPLY_NACK	(0x1U << 0U)
+#define DP_AUX_NATIVE_REPLY_DEFER	(0x2U << 0U)
+#define DP_AUX_NATIVE_REPLY_MASK	(0x3U << 0U)
 
-#define DP_AUX_I2C_REPLY_ACK		(0x0 << 2)
-#define DP_AUX_I2C_REPLY_NACK		(0x1 << 2)
-#define DP_AUX_I2C_REPLY_DEFER		(0x2 << 2)
-#define DP_AUX_I2C_REPLY_MASK		(0x3 << 2)
+#define DP_AUX_I2C_REPLY_ACK		(0x0U << 2U)
+#define DP_AUX_I2C_REPLY_NACK		(0x1U << 2U)
+#define DP_AUX_I2C_REPLY_DEFER		(0x2U << 2U)
+#define DP_AUX_I2C_REPLY_MASK		(0x3U << 2U)
 
 /* AUX CH addresses */
 /* DPCD */
@@ -115,28 +115,28 @@
 
 #define DP_MAX_LANE_COUNT                   0x002
 # define DP_MAX_LANE_COUNT_MASK		    0x1f
-# define DP_TPS3_SUPPORTED		    (1 << 6) /* 1.2 */
-# define DP_ENHANCED_FRAME_CAP		    (1 << 7)
+# define DP_TPS3_SUPPORTED		    (1U << 6U) /* 1.2 */
+# define DP_ENHANCED_FRAME_CAP		    (1U << 7U)
 
 #define DP_MAX_DOWNSPREAD                   0x003
-# define DP_MAX_DOWNSPREAD_0_5		    (1 << 0)
-# define DP_NO_AUX_HANDSHAKE_LINK_TRAINING  (1 << 6)
-# define DP_TPS4_SUPPORTED                  (1 << 7)
+# define DP_MAX_DOWNSPREAD_0_5		    (1U << 0U)
+# define DP_NO_AUX_HANDSHAKE_LINK_TRAINING  (1U << 6U)
+# define DP_TPS4_SUPPORTED                  (1U << 7U)
 
 #define DP_NORP                             0x004
 
 #define DP_DOWNSTREAMPORT_PRESENT           0x005
-# define DP_DWN_STRM_PORT_PRESENT           (1 << 0)
+# define DP_DWN_STRM_PORT_PRESENT           (1U << 0U)
 # define DP_DWN_STRM_PORT_TYPE_MASK         0x06
-# define DP_DWN_STRM_PORT_TYPE_DP           (0 << 1)
-# define DP_DWN_STRM_PORT_TYPE_ANALOG       (1 << 1)
-# define DP_DWN_STRM_PORT_TYPE_TMDS         (2 << 1)
-# define DP_DWN_STRM_PORT_TYPE_OTHER        (3 << 1)
-# define DP_FORMAT_CONVERSION               (1 << 3)
-# define DP_DETAILED_CAP_INFO_AVAILABLE	    (1 << 4) /* DPI */
+# define DP_DWN_STRM_PORT_TYPE_DP           (0U << 1U)
+# define DP_DWN_STRM_PORT_TYPE_ANALOG       (1U << 1U)
+# define DP_DWN_STRM_PORT_TYPE_TMDS         (2U << 1U)
+# define DP_DWN_STRM_PORT_TYPE_OTHER        (3U << 1U)
+# define DP_FORMAT_CONVERSION               (1U << 3U)
+# define DP_DETAILED_CAP_INFO_AVAILABLE	    (1U << 4U) /* DPI */
 
 #define DP_MAIN_LINK_CHANNEL_CODING         0x006
-# define DP_CAP_ANSI_8B10B		    (1 << 0)
+# define DP_CAP_ANSI_8B10B		    (1U << 0U)
 
 #define DP_DOWN_STREAM_PORT_COUNT	    0x007
 # define DP_PORT_COUNT_MASK		    0x0f
@@ -167,7 +167,7 @@
 
 #define DP_TRAINING_AUX_RD_INTERVAL         0x00e   /* XXX 1.2? */
 # define DP_TRAINING_AUX_RD_MASK            0x7F    /* XXX 1.2? */
-# define DP_EXTENDED_RECEIVER_CAP_FIELD_PRESENT	(1 << 7) /* DP 1.3 */
+# define DP_EXTENDED_RECEIVER_CAP_FIELD_PRESENT	(1U << 7U) /* DP 1.3 */
 
 #define DP_ADAPTER_CAP			    0x00f   /* 1.2 */
 # define DP_FORCE_LOAD_SENSE_CAP	    (1 << 0)
@@ -396,7 +396,7 @@
 
 #define DP_LANE_COUNT_SET	            0x101
 # define DP_LANE_COUNT_MASK		    0x0f
-# define DP_LANE_COUNT_ENHANCED_FRAME_EN    (1 << 7)
+# define DP_LANE_COUNT_ENHANCED_FRAME_EN    (1U << 7U)
 
 #define DP_TRAINING_PATTERN_SET	            0x102
 # define DP_TRAINING_PATTERN_DISABLE	    0
@@ -414,8 +414,8 @@
 # define DP_LINK_QUAL_PATTERN_11_PRBS7	    (3 << 2)
 # define DP_LINK_QUAL_PATTERN_11_MASK	    (3 << 2)
 
-# define DP_RECOVERED_CLOCK_OUT_EN	    (1 << 4)
-# define DP_LINK_SCRAMBLING_DISABLE	    (1 << 5)
+# define DP_RECOVERED_CLOCK_OUT_EN	    (1U << 4U)
+# define DP_LINK_SCRAMBLING_DISABLE	    (1U << 5U)
 
 # define DP_SYMBOL_ERROR_COUNT_BOTH	    (0 << 6)
 # define DP_SYMBOL_ERROR_COUNT_DISPARITY    (1 << 6)
@@ -445,11 +445,11 @@
 # define DP_TRAIN_MAX_PRE_EMPHASIS_REACHED  (1 << 5)
 
 #define DP_DOWNSPREAD_CTRL		    0x107
-# define DP_SPREAD_AMP_0_5		    (1 << 4)
-# define DP_MSA_TIMING_PAR_IGNORE_EN	    (1 << 7) /* eDP */
+# define DP_SPREAD_AMP_0_5		    (1U << 4U)
+# define DP_MSA_TIMING_PAR_IGNORE_EN	    (1U << 7U) /* eDP */
 
 #define DP_MAIN_LINK_CHANNEL_CODING_SET	    0x108
-# define DP_SET_ANSI_8B10B		    (1 << 0)
+# define DP_SET_ANSI_8B10B		    (1U << 0U)
 
 #define DP_I2C_SPEED_CONTROL_STATUS	    0x109   /* DPI */
 /* bitmask as for DP_I2C_SPEED_CAP */
@@ -555,9 +555,9 @@
 
 #define DP_LANE0_1_STATUS		    0x202
 #define DP_LANE2_3_STATUS		    0x203
-# define DP_LANE_CR_DONE		    (1 << 0)
-# define DP_LANE_CHANNEL_EQ_DONE	    (1 << 1)
-# define DP_LANE_SYMBOL_LOCKED		    (1 << 2)
+# define DP_LANE_CR_DONE		    (1U << 0U)
+# define DP_LANE_CHANNEL_EQ_DONE	    (1U << 1U)
+# define DP_LANE_SYMBOL_LOCKED		    (1U << 2U)
 
 #define DP_CHANNEL_EQ_BITS (DP_LANE_CR_DONE |		\
 			    DP_LANE_CHANNEL_EQ_DONE |	\
@@ -565,9 +565,9 @@
 
 #define DP_LANE_ALIGN_STATUS_UPDATED	    0x204
 
-#define DP_INTERLANE_ALIGN_DONE		    (1 << 0)
-#define DP_DOWNSTREAM_PORT_STATUS_CHANGED   (1 << 6)
-#define DP_LINK_STATUS_UPDATED		    (1 << 7)
+#define DP_INTERLANE_ALIGN_DONE		    (1U << 0U)
+#define DP_DOWNSTREAM_PORT_STATUS_CHANGED   (1U << 6U)
+#define DP_LINK_STATUS_UPDATED		    (1U << 7U)
 
 #define DP_SINK_STATUS			    0x205
 
@@ -873,14 +873,14 @@
 #define DP_DP13_MAX_LINK_RATE               0x2201
 
 #define DP_DPRX_FEATURE_ENUMERATION_LIST    0x2210  /* DP 1.3 */
-# define DP_GTC_CAP					(1 << 0)  /* DP 1.3 */
-# define DP_SST_SPLIT_SDP_CAP				(1 << 1)  /* DP 1.4 */
-# define DP_AV_SYNC_CAP					(1 << 2)  /* DP 1.3 */
-# define DP_VSC_SDP_EXT_FOR_COLORIMETRY_SUPPORTED	(1 << 3)  /* DP 1.3 */
-# define DP_VSC_EXT_VESA_SDP_SUPPORTED			(1 << 4)  /* DP 1.4 */
-# define DP_VSC_EXT_VESA_SDP_CHAINING_SUPPORTED		(1 << 5)  /* DP 1.4 */
-# define DP_VSC_EXT_CEA_SDP_SUPPORTED			(1 << 6)  /* DP 1.4 */
-# define DP_VSC_EXT_CEA_SDP_CHAINING_SUPPORTED		(1 << 7)  /* DP 1.4 */
+# define DP_GTC_CAP					(1U << 0U)  /* DP 1.3 */
+# define DP_SST_SPLIT_SDP_CAP				(1U << 1U)  /* DP 1.4 */
+# define DP_AV_SYNC_CAP					(1U << 2U)  /* DP 1.3 */
+# define DP_VSC_SDP_EXT_FOR_COLORIMETRY_SUPPORTED	(1U << 3U)  /* DP 1.3 */
+# define DP_VSC_EXT_VESA_SDP_SUPPORTED			(1U << 4U)  /* DP 1.4 */
+# define DP_VSC_EXT_VESA_SDP_CHAINING_SUPPORTED		(1U << 5U)  /* DP 1.4 */
+# define DP_VSC_EXT_CEA_SDP_SUPPORTED			(1U << 6U)  /* DP 1.4 */
+# define DP_VSC_EXT_CEA_SDP_CHAINING_SUPPORTED		(1U << 7U)  /* DP 1.4 */
 
 /* HDMI CEC tunneling over AUX DP 1.3 section 5.3.3.3.1 DPCD 1.4+ */
 #define DP_CEC_TUNNELING_CAPABILITY            0x3000
@@ -1122,47 +1122,47 @@ drm_dp_max_link_rate(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 static inline u8
 drm_dp_max_lane_count(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 {
-	return dpcd[DP_MAX_LANE_COUNT] & DP_MAX_LANE_COUNT_MASK;
+	return dpcd[DP_MAX_LANE_COUNT] & (u8)DP_MAX_LANE_COUNT_MASK;
 }
 
 static inline bool
 drm_dp_enhanced_frame_cap(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 {
-	return dpcd[DP_DPCD_REV] >= 0x11 &&
-		(dpcd[DP_MAX_LANE_COUNT] & DP_ENHANCED_FRAME_CAP);
+	return dpcd[DP_DPCD_REV] >= 0x11U &&
+		(dpcd[DP_MAX_LANE_COUNT] & (u8)DP_ENHANCED_FRAME_CAP) != 0U;
 }
 
 static inline bool
 drm_dp_tps3_supported(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 {
-	return dpcd[DP_DPCD_REV] >= 0x12 &&
-		dpcd[DP_MAX_LANE_COUNT] & DP_TPS3_SUPPORTED;
+	return dpcd[DP_DPCD_REV] >= 0x12U &&
+		(dpcd[DP_MAX_LANE_COUNT] & (u8)DP_TPS3_SUPPORTED) != 0U;
 }
 
 static inline bool
 drm_dp_tps4_supported(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 {
-	return dpcd[DP_DPCD_REV] >= 0x14 &&
-		dpcd[DP_MAX_DOWNSPREAD] & DP_TPS4_SUPPORTED;
+	return dpcd[DP_DPCD_REV] >= 0x14U &&
+		(dpcd[DP_MAX_DOWNSPREAD] & (u8)DP_TPS4_SUPPORTED) != 0U;
 }
 
 static inline u8
 drm_dp_training_pattern_mask(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 {
-	return (dpcd[DP_DPCD_REV] >= 0x14) ? DP_TRAINING_PATTERN_MASK_1_4 :
-		DP_TRAINING_PATTERN_MASK;
+	return (dpcd[DP_DPCD_REV] >= 0x14U) ? (u8)DP_TRAINING_PATTERN_MASK_1_4 :
+		(u8)DP_TRAINING_PATTERN_MASK;
 }
 
 static inline bool
 drm_dp_is_branch(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 {
-	return dpcd[DP_DOWNSTREAMPORT_PRESENT] & DP_DWN_STRM_PORT_PRESENT;
+	return (dpcd[DP_DOWNSTREAMPORT_PRESENT] & (u8)DP_DWN_STRM_PORT_PRESENT) != 0U;
 }
 
 static inline bool
 drm_dp_channel_coding_supported(const u8 dpcd[DP_RECEIVER_CAP_SIZE])
 {
-	return dpcd[DP_MAIN_LINK_CHANNEL_CODING] & DP_CAP_ANSI_8B10B;
+	return (dpcd[DP_MAIN_LINK_CHANNEL_CODING] & (u8)DP_CAP_ANSI_8B10B) != 0U;
 }
 
 struct drm_dp_aux_msg {
