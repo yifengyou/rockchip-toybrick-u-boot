@@ -176,7 +176,6 @@ obj-$(CONFIG_CMD_DVFS) += dvfs.o
 
 obj-$(CONFIG_CMD_BLOB) += blob.o
 
-obj-$(CONFIG_ARCH_ROCKCHIP) += rkimgtest.o
 obj-$(CONFIG_CMD_ATAGS) += atags.o
 
 endif # !CONFIG_SPL_BUILD

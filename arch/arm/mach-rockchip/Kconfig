@@ -535,9 +535,7 @@ endif
 config ROCKCHIP_RK3588
 	bool "Support Rockchip RK3588"
 	select ARM64 if !ARM64_BOOT_AARCH32
-	select ARM_SMCCC
 	select DEBUG_UART_BOARD_INIT
-	select GICV3 if !ARM64_BOOT_AARCH32 && !SUPPORT_USBPLUG
 	select ROCKCHIP_BROM_HELPER
 	select SUPPORT_SPL if !ARM64_BOOT_AARCH32
 	select SUPPORT_TPL if !ARM64_BOOT_AARCH32
@@ -919,7 +917,6 @@ config ROCKCHIP_USB_BOOT
 config ROCKCHIP_FIT_IMAGE
 	bool "Enable support for FIT image"
 	depends on FIT
-	select CMD_BOOT_FIT
 	default n
 	help
 	  This enables loading dtb from fit image.
