@@ -14,9 +14,9 @@
 #include <asm/io.h>
 #include <reset.h>
 
-#define SARADC2_EN_END_INT		BIT(0)
-#define SARADC2_START			BIT(4)
-#define SARADC2_SINGLE_MODE		BIT(5)
+#define SARADC2_EN_END_INT		(1U << 0)
+#define SARADC2_START			(1U << 4)
+#define SARADC2_SINGLE_MODE		(1U << 5)
 
 #define SARADC_TIMEOUT			(100 * 1000)
 
@@ -90,8 +90,8 @@ struct rockchip_saradc_regs {
 };
 
 struct rockchip_saradc_data {
-	int				num_bits;
-	int				num_channels;
+	unsigned int			num_bits;
+	unsigned int			num_channels;
 	unsigned long			clk_rate;
 };
 
@@ -122,7 +122,7 @@ static int rockchip_saradc_channel_data(struct udevice *dev, int channel,
 	}
 
 	/* Clear irq. */
-	writel(0x1, &priv->regs->end_int_st);
+	(void)writel((0x1), &priv->regs->end_int_st);
 
 	*data = readl(&priv->regs->data0 + priv->active_channel);
 	*data &= uc_pdata->data_mask;
@@ -133,24 +133,24 @@ static int rockchip_saradc_channel_data(struct udevice *dev, int channel,
 static int rockchip_saradc_start_channel(struct udevice *dev, int channel)
 {
 	struct rockchip_saradc_priv *priv = dev_get_priv(dev);
-	int val;
+	unsigned int val;
 
-	if (channel < 0 || channel >= priv->data->num_channels) {
+	if (channel < 0 || channel >= (int)priv->data->num_channels) {
 		pr_err("Requested channel is invalid!");
 		return -EINVAL;
 	}
 
 #if CONFIG_IS_ENABLED(DM_RESET)
-	reset_assert(&priv->rst);
+	(void)reset_assert(&priv->rst);
 	udelay(10);
-	reset_deassert(&priv->rst);
+	(void)reset_deassert(&priv->rst);
 #endif
-	writel(0x20, &priv->regs->t_pd_soc);
-	writel(0xc, &priv->regs->t_das_soc);
-	val = SARADC2_EN_END_INT << 16 | SARADC2_EN_END_INT;
-	writel(val, &priv->regs->end_int_en);
-	val = SARADC2_START | SARADC2_SINGLE_MODE | channel;
-	writel(val << 16 | val, &priv->regs->conv_con);
+	(void)writel((0x20), &priv->regs->t_pd_soc);
+	(void)writel((0xc), &priv->regs->t_das_soc);
+	val = (unsigned int)SARADC2_EN_END_INT << 16 | SARADC2_EN_END_INT;
+	(void)writel((val), &priv->regs->end_int_en);
+	val = SARADC2_START | SARADC2_SINGLE_MODE | (unsigned int)channel;
+	(void)writel((val << 16 | val), &priv->regs->conv_con);
 
 	udelay(100);
 
@@ -176,19 +176,21 @@ static int rockchip_saradc_probe(struct udevice *dev)
 
 #if CONFIG_IS_ENABLED(DM_RESET)
 	ret = reset_get_by_name(dev, "saradc-apb", &priv->rst);
-	if (ret) {
+	if (ret != 0) {
 		debug("reset_get_by_name() failed: %d\n", ret);
 		return ret;
 	}
 #endif
 
 	ret = clk_get_by_index(dev, 0, &clk);
-	if (ret)
+	if (ret != 0)  {
 		return ret;
+	}
 
-	ret = clk_set_rate(&clk, priv->data->clk_rate);
-	if (IS_ERR_VALUE(ret))
+	ret = (int)clk_set_rate(&clk, priv->data->clk_rate);
+	if (IS_ERR_VALUE(ret)) {
 		return ret;
+	}
 
 	/* Wait until pll stable */
 	mdelay(5);
@@ -212,10 +214,10 @@ static int rockchip_saradc_ofdata_to_platdata(struct udevice *dev)
 	}
 
 	priv->data = data;
-	uc_pdata->data_mask = (1 << priv->data->num_bits) - 1;
-	uc_pdata->data_format = ADC_DATA_FORMAT_BIN;
+	uc_pdata->data_mask = (1U << priv->data->num_bits) - 1U;
+	uc_pdata->data_format = (int)ADC_DATA_FORMAT_BIN;
 	uc_pdata->data_timeout_us = SARADC_TIMEOUT / 5;
-	uc_pdata->channel_mask = (1 << priv->data->num_channels) - 1;
+	uc_pdata->channel_mask = (1U << priv->data->num_channels) - 1U;
 
 	return 0;
 }
@@ -281,5 +283,5 @@ U_BOOT_DRIVER(rockchip_saradc_v2) = {
 	.ops		= &rockchip_saradc_ops,
 	.probe		= rockchip_saradc_probe,
 	.ofdata_to_platdata = rockchip_saradc_ofdata_to_platdata,
-	.priv_auto_alloc_size = sizeof(struct rockchip_saradc_priv),
+	.priv_auto_alloc_size = (int)sizeof(struct rockchip_saradc_priv),
 };
