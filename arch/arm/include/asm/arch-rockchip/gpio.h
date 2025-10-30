@@ -4,8 +4,8 @@
  * SPDX-License-Identifier:     GPL-2.0+
  */
 
-#ifndef _ASM_ARCH_GPIO_H
-#define _ASM_ARCH_GPIO_H
+#ifndef ASM_ARCH_GPIO_H
+#define ASM_ARCH_GPIO_H
 
 #ifndef CONFIG_ROCKCHIP_GPIO_V2
 struct rockchip_gpio_regs {
@@ -58,7 +58,7 @@ struct rockchip_gpio_regs {
 	u32 reserved0074;                       /* ADDRESS OFFSET: 0x0074 */
 	u32 ver_id;                             /* ADDRESS OFFSET: 0x0078 */
 };
-check_member(rockchip_gpio_regs, ver_id, 0x0078);
+check_member(rockchip_gpio_regs, ver_id, 0x0078UL);
 #endif
 
 #endif

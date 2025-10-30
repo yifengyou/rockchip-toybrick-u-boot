@@ -30,8 +30,8 @@
 			((readl(REG_H(REG)) & 0xFFFF) << 16))
 #define WRITE_REG(REG, VAL)	\
 {\
-	writel(((VAL) & 0xFFFF) | 0xFFFF0000, REG_L(REG)); \
-	writel((((VAL) & 0xFFFF0000) >> 16) | 0xFFFF0000, REG_H(REG));\
+	(void)writel(((VAL) & 0xFFFF) | 0xFFFF0000, REG_L(REG)); \
+	(void)writel((((VAL) & 0xFFFF0000) >> 16) | 0xFFFF0000, REG_H(REG));\
 }
 #define CLRBITS_LE32(REG, MASK)	WRITE_REG(REG, READ_REG(REG) & ~(MASK))
 #define SETBITS_LE32(REG, MASK)	WRITE_REG(REG, READ_REG(REG) | (MASK))
@@ -69,7 +69,7 @@ static int rockchip_gpio_direction_output(struct udevice *dev, unsigned offset,
 {
 	struct rockchip_gpio_priv *priv = dev_get_priv(dev);
 	struct rockchip_gpio_regs *regs = priv->regs;
-	int mask = OFFSET_TO_BIT(offset);
+	int mask = (int)(unsigned long)OFFSET_TO_BIT((unsigned long)offset);
 
 	CLRSETBITS_LE32(&regs->swport_dr, mask, value ? mask : 0);
 	SETBITS_LE32(&regs->swport_ddr, mask);
@@ -90,7 +90,7 @@ static int rockchip_gpio_set_value(struct udevice *dev, unsigned offset,
 {
 	struct rockchip_gpio_priv *priv = dev_get_priv(dev);
 	struct rockchip_gpio_regs *regs = priv->regs;
-	int mask = OFFSET_TO_BIT(offset);
+	int mask = (int)(unsigned long)OFFSET_TO_BIT((unsigned long)offset);
 
 	CLRSETBITS_LE32(&regs->swport_dr, mask, value ? mask : 0);
 
@@ -107,19 +107,20 @@ static int rockchip_gpio_get_function(struct udevice *dev, unsigned offset)
 	bool is_output;
 	int ret;
 
-	ret = pinctrl_get_gpio_mux(priv->pinctrl, priv->bank, offset);
+	ret = pinctrl_get_gpio_mux(priv->pinctrl, priv->bank, (int)offset);
 	if (ret < 0) {
 		dev_err(dev, "fail to get gpio mux %d\n", ret);
 		return ret;
 	}
 
 	/* If it's not 0, then it is not a GPIO */
-	if (ret > 0)
-		return GPIOF_FUNC;
+	if (ret > 0) {
+		return (int)GPIOF_FUNC;
+	}
 
-	is_output = READ_REG(&regs->swport_ddr) & OFFSET_TO_BIT(offset);
+	is_output = (((u32)READ_REG(&regs->swport_ddr) & (u32)(unsigned long)OFFSET_TO_BIT((unsigned long)offset)) != 0U);
 
-	return is_output ? GPIOF_OUTPUT : GPIOF_INPUT;
+	return is_output ? (int)GPIOF_OUTPUT : (int)GPIOF_INPUT;
 #endif
 }
 
@@ -129,14 +130,16 @@ static int rockchip_gpio_probe(struct udevice *dev)
 	struct rockchip_gpio_priv *priv = dev_get_priv(dev);
 	struct rockchip_pinctrl_priv *pctrl_priv;
 	struct rockchip_pin_bank *bank;
-	char *end = NULL;
-	int id = -1, ret;
+	char *end;
+	int id = -1, ret, i;
+#define DEV_NAME_MAX 128
+	char tmp_name[DEV_NAME_MAX];
 
 	priv->regs = dev_read_addr_ptr(dev);
 	ret = uclass_get_device_by_seq(UCLASS_PINCTRL, 0, &priv->pinctrl);
-	if (ret) {
+	if (ret != 0) {
 		ret = uclass_first_device_err(UCLASS_PINCTRL, &priv->pinctrl);
-		if (ret) {
+		if (ret != 0) {
 			dev_err(dev, "failed to get pinctrl device %d\n", ret);
 			return ret;
 		}
@@ -148,25 +151,34 @@ static int rockchip_gpio_probe(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	end = strrchr(dev->name, '@');
-	if (end)
-		id = trailing_strtoln(dev->name, end);
-	if (id < 0)
-		dev_read_alias_seq(dev, &id);
+	for (i = 0; i < DEV_NAME_MAX && dev->name[i] != '\0'; i++) {
+		tmp_name[i] = dev->name[i];
+	}
+	if (i >= DEV_NAME_MAX) {
+		return -EINVAL;
+	}
+	tmp_name[i] = '\0';
+	end = strrchr(tmp_name, (int)'@');
+	if (end) {
+		id = (int)trailing_strtoln(dev->name, end);
+	}
+	if (id < 0) {
+		(void)dev_read_alias_seq(dev, &id);
+	}
 
-	if (id < 0 || id >= pctrl_priv->ctrl->nr_banks) {
+	if (id < 0 || id >= (int)pctrl_priv->ctrl->nr_banks) {
 		dev_err(dev, "nr_banks=%d, bank id=%d invalid\n",
 			pctrl_priv->ctrl->nr_banks, id);
 		return -EINVAL;
 	}
 
 	bank = &pctrl_priv->ctrl->pin_banks[id];
-	if (bank->bank_num != id) {
+	if ((int)bank->bank_num != id) {
 		dev_err(dev, "bank id mismatch with pinctrl\n");
 		return -EINVAL;
 	}
 
-	priv->bank = bank->bank_num;
+	priv->bank = (int)bank->bank_num;
 	uc_priv->gpio_count = bank->nr_pins;
 	uc_priv->gpio_base = bank->pin_base;
 	uc_priv->bank_name = bank->name;
@@ -187,11 +199,12 @@ static const struct udevice_id rockchip_gpio_ids[] = {
 	{ }
 };
 
+static char gpio_rockchip_name[] = "gpio_rockchip";
 U_BOOT_DRIVER(gpio_rockchip) = {
-	.name	= "gpio_rockchip",
+	.name	= gpio_rockchip_name,
 	.id	= UCLASS_GPIO,
 	.of_match = rockchip_gpio_ids,
 	.ops	= &gpio_rockchip_ops,
-	.priv_auto_alloc_size = sizeof(struct rockchip_gpio_priv),
+	.priv_auto_alloc_size = (int)sizeof(struct rockchip_gpio_priv),
 	.probe	= rockchip_gpio_probe,
 };
