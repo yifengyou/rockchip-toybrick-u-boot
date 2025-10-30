@@ -34,8 +34,9 @@ static int gpio_regulator_ofdata_to_platdata(struct udevice *dev)
 
 	dev_pdata = dev_get_platdata(dev);
 	uc_pdata = dev_get_uclass_platdata(dev);
-	if (!uc_pdata)
+	if (!uc_pdata) {
 		return -ENXIO;
+	}
 
 	/* Set type to gpio */
 	uc_pdata->type = REGULATOR_TYPE_GPIO;
@@ -49,18 +50,21 @@ static int gpio_regulator_ofdata_to_platdata(struct udevice *dev)
 	 */
 	gpio = &dev_pdata->gpio;
 	ret = gpio_request_by_name(dev, "gpios", 0, gpio, GPIOD_IS_OUT);
-	if (ret)
+	if (ret != 0) {
 		debug("regulator gpio - not found! Error: %d", ret);
+	}
 
 	len = dev_read_size(dev, "states");
-	if (len < 0)
+	if (len < 0) {
 		return len;
+	}
 
-	len /= sizeof(fdt32_t);
+	len /= (int)sizeof(fdt32_t);
 
 	ret = dev_read_u32_array(dev, "states", states_array, len);
-	if (ret)
+	if (ret != 0) {
 		return -EINVAL;
+	}
 
 	for (i = 0, j = 0; i < len; i += 2) {
 		dev_pdata->voltages[j] = states_array[i];
@@ -77,8 +81,9 @@ static int gpio_regulator_get_value(struct udevice *dev)
 	struct gpio_regulator_platdata *dev_pdata = dev_get_platdata(dev);
 	int enable;
 
-	if (!dev_pdata->gpio.dev)
+	if (!dev_pdata->gpio.dev) {
 		return -ENOSYS;
+	}
 
 	uc_pdata = dev_get_uclass_platdata(dev);
 	if (uc_pdata->min_uV > uc_pdata->max_uV) {
@@ -87,10 +92,11 @@ static int gpio_regulator_get_value(struct udevice *dev)
 	}
 
 	enable = dm_gpio_get_value(&dev_pdata->gpio);
-	if (enable == dev_pdata->states[0])
+	if (enable == dev_pdata->states[0]) {
 		return dev_pdata->voltages[0];
-	else
+	} else {
 		return dev_pdata->voltages[1];
+	}
 }
 
 static int gpio_regulator_set_value(struct udevice *dev, int uV)
@@ -99,18 +105,21 @@ static int gpio_regulator_set_value(struct udevice *dev, int uV)
 	int ret;
 	bool enable;
 
-	if (!dev_pdata->gpio.dev)
+	if (!dev_pdata->gpio.dev) {
 		return -ENOSYS;
+	}
 
-	if (uV == dev_pdata->voltages[0])
+	if (uV == dev_pdata->voltages[0]) {
 		enable = dev_pdata->states[0];
-	else if (uV == dev_pdata->voltages[1])
-		enable = dev_pdata->states[1];
-	else
-		return -EINVAL;
-
+	} else {
+		 if (uV == dev_pdata->voltages[1]) {
+			enable = dev_pdata->states[1];
+		} else {
+			return -EINVAL;
+		}
+	}
 	ret = dm_gpio_set_value(&dev_pdata->gpio, enable);
-	if (ret) {
+	if (ret != 0) {
 		pr_err("Can't set regulator : %s gpio to: %d\n", dev->name,
 		      enable);
 		return ret;
@@ -135,5 +144,5 @@ U_BOOT_DRIVER(gpio_regulator) = {
 	.ops = &gpio_regulator_ops,
 	.of_match = gpio_regulator_ids,
 	.ofdata_to_platdata = gpio_regulator_ofdata_to_platdata,
-	.platdata_auto_alloc_size = sizeof(struct gpio_regulator_platdata),
+	.platdata_auto_alloc_size = (int)sizeof(struct gpio_regulator_platdata),
 };
