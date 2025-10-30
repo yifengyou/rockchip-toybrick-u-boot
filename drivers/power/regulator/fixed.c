@@ -31,25 +31,29 @@ static int fixed_regulator_ofdata_to_platdata(struct udevice *dev)
 
 	dev_pdata = dev_get_platdata(dev);
 	uc_pdata = dev_get_uclass_platdata(dev);
-	if (!uc_pdata)
+	if (!uc_pdata) {
 		return -ENXIO;
+	}
 
 	/* Set type to fixed */
 	uc_pdata->type = REGULATOR_TYPE_FIXED;
-	if (!dev_read_bool(dev, "enable-active-high"))
+	if (!dev_read_bool(dev, "enable-active-high")) {
 		flags |= GPIOD_ACTIVE_LOW;
-	if (dev_read_bool(dev, "regulator-boot-on"))
+	}
+	if (dev_read_bool(dev, "regulator-boot-on")) {
 		flags |= GPIOD_IS_OUT_ACTIVE;
+	}
 
 	/* Get fixed regulator optional enable GPIO desc */
 	gpio = &dev_pdata->gpio;
 	ret = gpio_request_by_name(dev, "gpio", 0, gpio, flags);
-	if (ret) {
+	if (ret != 0) {
 		ret = gpio_request_by_name(dev, "gpios", 0, gpio, flags);
-		if (ret) {
+		if (ret != 0) {
 			debug("Fixed regulator optional enable GPIO - not found! Error: %d\n", ret);
-			if (ret != -ENOENT)
+			if (ret != -ENOENT) {
 				return ret;
+			}
 		}
 	}
 
@@ -65,8 +69,9 @@ static int fixed_regulator_get_value(struct udevice *dev)
 	struct dm_regulator_uclass_platdata *uc_pdata;
 
 	uc_pdata = dev_get_uclass_platdata(dev);
-	if (!uc_pdata)
+	if (!uc_pdata) {
 		return -ENXIO;
+	}
 
 	if (uc_pdata->min_uV != uc_pdata->max_uV) {
 		debug("Invalid constraints for: %s\n", uc_pdata->name);
@@ -81,8 +86,9 @@ static int fixed_regulator_get_current(struct udevice *dev)
 	struct dm_regulator_uclass_platdata *uc_pdata;
 
 	uc_pdata = dev_get_uclass_platdata(dev);
-	if (!uc_pdata)
+	if (!uc_pdata) {
 		return -ENXIO;
+	}
 
 	if (uc_pdata->min_uA != uc_pdata->max_uA) {
 		debug("Invalid constraints for: %s\n", uc_pdata->name);
@@ -97,8 +103,9 @@ static int fixed_regulator_get_enable(struct udevice *dev)
 	struct fixed_regulator_platdata *dev_pdata = dev_get_platdata(dev);
 
 	/* Enable GPIO is optional */
-	if (!dev_pdata->gpio.dev)
+	if (!dev_pdata->gpio.dev) {
 		return true;
+	}
 
 	return dm_gpio_get_value(&dev_pdata->gpio);
 }
@@ -113,20 +120,22 @@ static int fixed_regulator_set_enable(struct udevice *dev, bool enable)
 	      dm_gpio_is_valid(&dev_pdata->gpio));
 	/* Enable GPIO is optional */
 	if (!dm_gpio_is_valid(&dev_pdata->gpio)) {
-		if (!enable)
+		if (!enable) {
 			return -ENOSYS;
+		}
 		return 0;
 	}
 
 	ret = dm_gpio_set_value(&dev_pdata->gpio, enable);
-	if (ret) {
+	if (ret != 0) {
 		pr_err("Can't set regulator : %s gpio to: %d\n", dev->name,
 		      enable);
 		return ret;
 	}
 
-	if (enable && dev_pdata->startup_delay_us)
+	if (enable && (dev_pdata->startup_delay_us != 0)) {
 		udelay(dev_pdata->startup_delay_us);
+	}
 	debug("%s: done\n", __func__);
 
 	return 0;
@@ -150,5 +159,5 @@ U_BOOT_DRIVER(fixed_regulator) = {
 	.ops = &fixed_regulator_ops,
 	.of_match = fixed_regulator_ids,
 	.ofdata_to_platdata = fixed_regulator_ofdata_to_platdata,
-	.platdata_auto_alloc_size = sizeof(struct fixed_regulator_platdata),
+	.platdata_auto_alloc_size = (int)sizeof(struct fixed_regulator_platdata),
 };
