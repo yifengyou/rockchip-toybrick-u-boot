@@ -135,17 +135,6 @@ enum dither_down_mode_sel {
 	DITHER_DOWN_FRC = 0x1
 };
 
-enum vop_csc_format {
-	CSC_BT601L,
-	CSC_BT709L,
-	CSC_BT601F,
-	CSC_BT2020L,
-	CSC_BT709L_13BIT,
-	CSC_BT709F_13BIT,
-	CSC_BT2020L_13BIT,
-	CSC_BT2020F_13BIT,
-};
-
 enum vop_pol {
 	HSYNC_POSITIVE = 0,
 	VSYNC_POSITIVE = 1,
