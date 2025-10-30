@@ -4,8 +4,8 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#ifndef _ROCKCHIP_DISPLAY_H
-#define _ROCKCHIP_DISPLAY_H
+#ifndef ROCKCHIP_DISPLAY_H_
+#define ROCKCHIP_DISPLAY_H_
 
 #ifdef CONFIG_SPL_BUILD
 #include <linux/hdmi.h>
@@ -27,20 +27,20 @@
  * minor: big feature change under same structure
  * build: RTL current SVN number
  */
-#define VOP_VERSION(major, minor)		((major) << 8 | (minor))
-#define VOP_MAJOR(version)			((version) >> 8)
-#define VOP_MINOR(version)			((version) & 0xff)
+#define VOP_VERSION(major, minor)		(((u16)(major) << 8) | (minor))
+#define VOP_MAJOR(version)			(((version) >> 8) & 0xFF)
+#define VOP_MINOR(version)			((version) & 0xFF)
 
-#define VOP2_VERSION(major, minor, build)	((major) << 24 | (minor) << 16 | (build))
-#define VOP2_MAJOR(version)			(((version) >> 24) & 0xff)
-#define VOP2_MINOR(version)			(((version) >> 16) & 0xff)
-#define VOP2_BUILD(version)			((version) & 0xffff)
+#define VOP2_VERSION(major, minor, build)	(((u32)(major) << 24) | ((u32)(minor) << 16) | (build))
+#define VOP2_MAJOR(version)			(((version) >> 24) & 0xFF)
+#define VOP2_MINOR(version)			(((version) >> 16) & 0xFF)
+#define VOP2_BUILD(version)			((version) & 0xFFFF)
 
-#define VOP_VERSION_RK3528			VOP2_VERSION(0x50, 0x17, 0x1263)
-#define VOP_VERSION_RK3562			VOP2_VERSION(0x50, 0x17, 0x4350)
-#define VOP_VERSION_RK3568			VOP2_VERSION(0x40, 0x15, 0x8023)
-#define VOP_VERSION_RK3576			VOP2_VERSION(0x50, 0x19, 0x9765)
-#define VOP_VERSION_RK3588			VOP2_VERSION(0x40, 0x17, 0x6786)
+#define VOP_VERSION_RK3528			VOP2_VERSION(0x50U, 0x17U, 0x1263U)
+#define VOP_VERSION_RK3562			VOP2_VERSION(0x50U, 0x17U, 0x4350U)
+#define VOP_VERSION_RK3568			VOP2_VERSION(0x40U, 0x15U, 0x8023U)
+#define VOP_VERSION_RK3576			VOP2_VERSION(0x50U, 0x19U, 0x9765U)
+#define VOP_VERSION_RK3588			VOP2_VERSION(0x40U, 0x17U, 0x6786U)
 
 #define ROCKCHIP_OUTPUT_DUAL_CHANNEL_LEFT_RIGHT_MODE	BIT(0)
 #define ROCKCHIP_OUTPUT_DUAL_CHANNEL_ODD_EVEN_MODE	BIT(1)
@@ -73,6 +73,17 @@ enum rockchip_mcu_cmd {
 	MCU_WRCMD = 0,
 	MCU_WRDATA,
 	MCU_SETBYPASS,
+};
+
+enum vop_csc_format {
+	CSC_BT601L,
+	CSC_BT709L,
+	CSC_BT601F,
+	CSC_BT2020L,
+	CSC_BT709L_13BIT,
+	CSC_BT709F_13BIT,
+	CSC_BT2020L_13BIT,
+	CSC_BT2020F_13BIT,
 };
 
 /*
@@ -173,12 +184,12 @@ struct crtc_state {
 	struct clk dclk;
 	int crtc_id;
 
-	int format;
+	enum data_format format;
 	u32 dma_addr;
 	int ymirror;
 	int rb_swap;
-	int xvir;
-	int post_csc_mode;
+	u32 xvir;
+	enum vop_csc_format post_csc_mode;
 	int dclk_core_div;
 	int dclk_out_div;
 	struct display_rect src_rect;
@@ -235,7 +246,7 @@ struct connector_state {
 	int output_mode;
 	int type;
 	int output_if;
-	int output_flags;
+	u32 output_flags;
 	enum drm_color_encoding color_encoding;
 	enum drm_color_range color_range;
 	unsigned int bpc;
@@ -274,7 +285,7 @@ struct logo_info {
 	bool ymirror;
 	u32 offset;
 	u32 width;
-	int height;
+	u32 height;
 	u32 bpp;
 };
 
@@ -299,15 +310,15 @@ struct display_state {
 	char klogo_name[30];
 
 	struct logo_info logo;
-	int logo_mode;
-	int charge_logo_mode;
+	enum display_mode logo_mode;
+	enum display_mode charge_logo_mode;
 	int logo_rotate;
 	void *mem_base;
 	int mem_size;
 
 	int enable;
-	int is_init;
-	int is_enable;
+	bool is_init;
+	bool is_enable;
 	bool is_klogo_valid;
 	bool force_output;
 	bool enabled_at_spl;
