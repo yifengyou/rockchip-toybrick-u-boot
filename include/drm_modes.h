@@ -4,8 +4,8 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#ifndef _DRM_MODES_H
-#define _DRM_MODES_H
+#ifndef DRM_MODES_H_
+#define DRM_MODES_H_
 
 #include "fdtdec.h"
 
@@ -14,35 +14,35 @@
 #define DRM_DISPLAY_MODE_LEN	32
 #define DRM_PROP_NAME_LEN	32
 
-#define DRM_MODE_TYPE_BUILTIN	(1<<0)
-#define DRM_MODE_TYPE_CLOCK_C	((1<<1) | DRM_MODE_TYPE_BUILTIN)
-#define DRM_MODE_TYPE_CRTC_C	((1<<2) | DRM_MODE_TYPE_BUILTIN)
-#define DRM_MODE_TYPE_PREFERRED	(1<<3)
-#define DRM_MODE_TYPE_DEFAULT	(1<<4)
-#define DRM_MODE_TYPE_USERDEF	(1<<5)
-#define DRM_MODE_TYPE_DRIVER	(1<<6)
+#define DRM_MODE_TYPE_BUILTIN	(1U<<0U)
+#define DRM_MODE_TYPE_CLOCK_C	((1U<<1U) | DRM_MODE_TYPE_BUILTIN)
+#define DRM_MODE_TYPE_CRTC_C	((1U<<2U) | DRM_MODE_TYPE_BUILTIN)
+#define DRM_MODE_TYPE_PREFERRED	(1U<<3U)
+#define DRM_MODE_TYPE_DEFAULT	(1U<<4U)
+#define DRM_MODE_TYPE_USERDEF	(1U<<5U)
+#define DRM_MODE_TYPE_DRIVER	(1U<<6U)
 
 /* Video mode flags */
 /* bit compatible with the xorg definitions. */
-#define DRM_MODE_FLAG_PHSYNC			(1 << 0)
-#define DRM_MODE_FLAG_NHSYNC			(1 << 1)
-#define DRM_MODE_FLAG_PVSYNC			(1 << 2)
-#define DRM_MODE_FLAG_NVSYNC			(1 << 3)
-#define DRM_MODE_FLAG_INTERLACE			(1 << 4)
-#define DRM_MODE_FLAG_DBLSCAN			(1 << 5)
-#define DRM_MODE_FLAG_CSYNC			(1 << 6)
-#define DRM_MODE_FLAG_PCSYNC			(1 << 7)
-#define DRM_MODE_FLAG_NCSYNC			(1 << 8)
-#define DRM_MODE_FLAG_HSKEW			(1 << 9) /* hskew provided */
-#define DRM_MODE_FLAG_BCAST			(1 << 10)
-#define DRM_MODE_FLAG_PIXMUX			(1 << 11)
-#define DRM_MODE_FLAG_DBLCLK			(1 << 12)
-#define DRM_MODE_FLAG_CLKDIV2			(1 << 13)
+#define DRM_MODE_FLAG_PHSYNC			(1UL << 0U)
+#define DRM_MODE_FLAG_NHSYNC			(1UL << 1U)
+#define DRM_MODE_FLAG_PVSYNC			(1UL << 2U)
+#define DRM_MODE_FLAG_NVSYNC			(1UL << 3U)
+#define DRM_MODE_FLAG_INTERLACE			(1UL << 4U)
+#define DRM_MODE_FLAG_DBLSCAN			(1UL << 5U)
+#define DRM_MODE_FLAG_CSYNC			(1UL << 6U)
+#define DRM_MODE_FLAG_PCSYNC			(1UL << 7U)
+#define DRM_MODE_FLAG_NCSYNC			(1UL << 8U)
+#define DRM_MODE_FLAG_HSKEW			(1UL << 9U) /* hskew provided */
+#define DRM_MODE_FLAG_BCAST			(1UL << 10U)
+#define DRM_MODE_FLAG_PIXMUX			(1UL << 11U)
+#define DRM_MODE_FLAG_DBLCLK			(1UL << 12U)
+#define DRM_MODE_FLAG_CLKDIV2			(1UL << 13U)
 /*
  * When adding a new stereo mode don't forget to adjust DRM_MODE_FLAGS_3D_MAX
  * (define not exposed to user space).
  */
-#define DRM_MODE_FLAG_3D_MASK			(0x1f << 14)
+#define DRM_MODE_FLAG_3D_MASK			(0x1fU << 14U)
 #define  DRM_MODE_FLAG_3D_NONE			(0 << 14)
 #define  DRM_MODE_FLAG_3D_FRAME_PACKING		(1 << 14)
 #define  DRM_MODE_FLAG_3D_FIELD_ALTERNATIVE	(2 << 14)
@@ -54,8 +54,8 @@
 #define  DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF	(8 << 14)
 
 /* Panel Mirror control */
-#define DRM_MODE_FLAG_XMIRROR			(1<<28)
-#define DRM_MODE_FLAG_YMIRROR			(1<<29)
+#define DRM_MODE_FLAG_XMIRROR			(1ULL << 28U)
+#define DRM_MODE_FLAG_YMIRROR			(1ULL << 29U)
 #define DRM_MODE_FLAG_XYMIRROR			(DRM_MODE_FLAG_XMIRROR | DRM_MODE_FLAG_YMIRROR)
 
 /* Picture aspect ratio options */
@@ -113,8 +113,8 @@
  * This define is provided as a convenience, looking up the property id
  * using the name->prop id lookup is the preferred method.
  */
-#define DRM_MODE_REFLECT_X      (1<<4)
-#define DRM_MODE_REFLECT_Y      (1<<5)
+#define DRM_MODE_REFLECT_X      (1UL << 4U)
+#define DRM_MODE_REFLECT_Y      (1UL << 5U)
 
 /*
  * DRM_MODE_REFLECT_MASK
@@ -208,20 +208,20 @@ enum v4l2_colorspace {
 	V4L2_COLORSPACE_DCI_P3        = 12,
 };
 
-#define CRTC_INTERLACE_HALVE_V	(1 << 0) /* halve V values for interlacing */
-#define CRTC_STEREO_DOUBLE	(1 << 1) /* adjust timings for stereo modes */
-#define CRTC_NO_DBLSCAN		(1 << 2) /* don't adjust doublescan */
-#define CRTC_NO_VSCAN		(1 << 3) /* don't adjust doublescan */
+#define CRTC_INTERLACE_HALVE_V	(1UL << 0U) /* halve V values for interlacing */
+#define CRTC_STEREO_DOUBLE	(1UL << 1U) /* adjust timings for stereo modes */
+#define CRTC_NO_DBLSCAN		(1UL << 2U) /* don't adjust doublescan */
+#define CRTC_NO_VSCAN		(1UL << 3U) /* don't adjust doublescan */
 #define CRTC_STEREO_DOUBLE_ONLY	(CRTC_STEREO_DOUBLE | CRTC_NO_DBLSCAN | \
 				 CRTC_NO_VSCAN)
 
 #define DRM_MODE_FLAG_3D_MAX	DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF
 
-#define DRM_MODE_MATCH_TIMINGS		(1 << 0)
-#define DRM_MODE_MATCH_CLOCK		(1 << 1)
-#define DRM_MODE_MATCH_FLAGS		(1 << 2)
-#define DRM_MODE_MATCH_3D_FLAGS		(1 << 3)
-#define DRM_MODE_MATCH_ASPECT_RATIO	(1 << 4)
+#define DRM_MODE_MATCH_TIMINGS		(1U << 0U)
+#define DRM_MODE_MATCH_CLOCK		(1U << 1U)
+#define DRM_MODE_MATCH_FLAGS		(1U << 2U)
+#define DRM_MODE_MATCH_3D_FLAGS		(1U << 3U)
+#define DRM_MODE_MATCH_ASPECT_RATIO	(1U << 4U)
 
 struct drm_display_mode {
 	/* Proposed mode values */
@@ -364,7 +364,7 @@ struct videomode {
 	u32 vback_porch;
 	u32 vsync_len;
 
-	enum display_flags flags; /* display flags */
+	u32 flags; /* display flags */
 };
 
 struct drm_display_mode *drm_mode_create(void);

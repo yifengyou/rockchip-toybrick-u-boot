@@ -36,6 +36,12 @@
 #include <linux/compat.h>
 #include <malloc.h>
 
+// PRQA S 3101 ++
+// PRQA S 5118 ++
+// PRQA S 5124 ++
+// PRQA S 5125 ++
+// PRQA S 5129 ++
+
 #define PICOS2KHZ(a)	(1000000000UL / (a))
 #define KHZ2PICOS(a)	(1000000000UL / (a))
 
@@ -52,9 +58,11 @@ struct drm_display_mode *drm_mode_create(void)
 	struct drm_display_mode *nmode;
 
 	nmode = malloc(sizeof(struct drm_display_mode));
-	memset(nmode, 0, sizeof(struct drm_display_mode));
-	if (!nmode)
+	if (nmode == NULL) {
 		return NULL;
+	}
+
+	(void)memset(nmode, 0, sizeof(struct drm_display_mode));
 
 	return nmode;
 }
@@ -78,8 +86,9 @@ void drm_mode_copy(struct drm_display_mode *dst, const struct drm_display_mode *
  */
 void drm_mode_destroy(struct drm_display_mode *mode)
 {
-	if (!mode)
+	if (!mode) {
 		return;
+	}
 
 	kfree(mode);
 }
@@ -106,10 +115,11 @@ static bool drm_mode_match_clock(const struct drm_display_mode *mode1,
 	 * do clock check convert to PICOS
 	 * so fb modes get matched the same
 	 */
-	if (mode1->clock && mode2->clock)
-		return KHZ2PICOS(mode1->clock) == KHZ2PICOS(mode2->clock);
-	else
+	if (mode1->clock != 0 && mode2->clock != 0) {
+		return KHZ2PICOS((ulong)mode1->clock) == KHZ2PICOS((ulong)mode2->clock);
+	} else {
 		return mode1->clock == mode2->clock;
+	}
 }
 
 static bool drm_mode_match_flags(const struct drm_display_mode *mode1,
@@ -147,31 +157,38 @@ bool drm_mode_match(const struct drm_display_mode *mode1,
 		    const struct drm_display_mode *mode2,
 		    unsigned int match_flags)
 {
-	if (!mode1 && !mode2)
+	if (!mode1 && !mode2) {
 		return true;
+	}
 
-	if (!mode1 || !mode2)
+	if (!mode1 || !mode2) {
 		return false;
+	}
 
-	if (match_flags & DRM_MODE_MATCH_TIMINGS &&
-	    !drm_mode_match_timings(mode1, mode2))
+	if ((match_flags & DRM_MODE_MATCH_TIMINGS) != 0U &&
+	    !drm_mode_match_timings(mode1, mode2)) {
 		return false;
+	}
 
-	if (match_flags & DRM_MODE_MATCH_CLOCK &&
-	    !drm_mode_match_clock(mode1, mode2))
+	if ((match_flags & DRM_MODE_MATCH_CLOCK) != 0U &&
+	    !drm_mode_match_clock(mode1, mode2)) {
 		return false;
+	}
 
-	if (match_flags & DRM_MODE_MATCH_FLAGS &&
-	    !drm_mode_match_flags(mode1, mode2))
+	if ((match_flags & DRM_MODE_MATCH_FLAGS) != 0U &&
+	    !drm_mode_match_flags(mode1, mode2)) {
 		return false;
+	}
 
-	if (match_flags & DRM_MODE_MATCH_3D_FLAGS &&
-	    !drm_mode_match_3d_flags(mode1, mode2))
+	if ((match_flags & DRM_MODE_MATCH_3D_FLAGS) != 0U &&
+	    !drm_mode_match_3d_flags(mode1, mode2)) {
 		return false;
+	}
 
-	if (match_flags & DRM_MODE_MATCH_ASPECT_RATIO &&
-	    !drm_mode_match_aspect_ratio(mode1, mode2))
+	if ((match_flags & DRM_MODE_MATCH_ASPECT_RATIO) != 0U &&
+	    !drm_mode_match_aspect_ratio(mode1, mode2)) {
 		return false;
+	}
 
 	return true;
 }
@@ -207,33 +224,42 @@ bool drm_mode_equal(const struct drm_display_mode *mode1,
 void drm_display_mode_from_videomode(const struct videomode *vm,
 				     struct drm_display_mode *dmode)
 {
-	dmode->hdisplay = vm->hactive;
-	dmode->hsync_start = dmode->hdisplay + vm->hfront_porch;
-	dmode->hsync_end = dmode->hsync_start + vm->hsync_len;
-	dmode->htotal = dmode->hsync_end + vm->hback_porch;
+	dmode->hdisplay = (int)vm->hactive;
+	dmode->hsync_start = dmode->hdisplay + (int)vm->hfront_porch;
+	dmode->hsync_end = dmode->hsync_start + (int)vm->hsync_len;
+	dmode->htotal = dmode->hsync_end + (int)vm->hback_porch;
 
-	dmode->vdisplay = vm->vactive;
-	dmode->vsync_start = dmode->vdisplay + vm->vfront_porch;
-	dmode->vsync_end = dmode->vsync_start + vm->vsync_len;
-	dmode->vtotal = dmode->vsync_end + vm->vback_porch;
+	dmode->vdisplay = (int)vm->vactive;
+	dmode->vsync_start = dmode->vdisplay + (int)vm->vfront_porch;
+	dmode->vsync_end = dmode->vsync_start + (int)vm->vsync_len;
+	dmode->vtotal = dmode->vsync_end + (int)vm->vback_porch;
 
-	dmode->clock = vm->pixelclock / 1000;
+	dmode->clock = (int)vm->pixelclock / 1000;
 
 	dmode->flags = 0;
-	if (vm->flags & DISPLAY_FLAGS_HSYNC_HIGH)
-		dmode->flags |= DRM_MODE_FLAG_PHSYNC;
-	else if (vm->flags & DISPLAY_FLAGS_HSYNC_LOW)
-		dmode->flags |= DRM_MODE_FLAG_NHSYNC;
-	if (vm->flags & DISPLAY_FLAGS_VSYNC_HIGH)
-		dmode->flags |= DRM_MODE_FLAG_PVSYNC;
-	else if (vm->flags & DISPLAY_FLAGS_VSYNC_LOW)
-		dmode->flags |= DRM_MODE_FLAG_NVSYNC;
-	if (vm->flags & DISPLAY_FLAGS_INTERLACED)
-		dmode->flags |= DRM_MODE_FLAG_INTERLACE;
-	if (vm->flags & DISPLAY_FLAGS_DOUBLESCAN)
-		dmode->flags |= DRM_MODE_FLAG_DBLSCAN;
-	if (vm->flags & DISPLAY_FLAGS_DOUBLECLK)
-		dmode->flags |= DRM_MODE_FLAG_DBLCLK;
+	if (((u32)vm->flags & (u32)DISPLAY_FLAGS_HSYNC_HIGH) != 0U) {
+		dmode->flags |= (u32)DRM_MODE_FLAG_PHSYNC;
+	} else if (((u32)vm->flags & (u32)DISPLAY_FLAGS_HSYNC_LOW) != 0U) {
+		dmode->flags |= (u32)DRM_MODE_FLAG_NHSYNC;
+	} else {
+		/* Do nothing */
+	}
+	if (((u32)vm->flags & (u32)DISPLAY_FLAGS_VSYNC_HIGH) != 0U) {
+		dmode->flags |= (u32)DRM_MODE_FLAG_PVSYNC;
+	} else if (((u32)vm->flags & (u32)DISPLAY_FLAGS_VSYNC_LOW) != 0U) {
+		dmode->flags |= (u32)DRM_MODE_FLAG_NVSYNC;
+	} else {
+		/* Do nothing */
+	}
+	if (((u32)vm->flags & (u32)DISPLAY_FLAGS_INTERLACED) != 0U) {
+		dmode->flags |= (u32)DRM_MODE_FLAG_INTERLACE;
+	}
+	if (((u32)vm->flags & (u32)DISPLAY_FLAGS_DOUBLESCAN) != 0U) {
+		dmode->flags |= (u32)DRM_MODE_FLAG_DBLSCAN;
+	}
+	if (((u32)vm->flags & (u32)DISPLAY_FLAGS_DOUBLECLK) != 0U) {
+		dmode->flags |= (u32)DRM_MODE_FLAG_DBLCLK;
+	}
 }
 
 /**
@@ -246,31 +272,46 @@ void drm_display_mode_from_videomode(const struct videomode *vm,
 void drm_display_mode_to_videomode(const struct drm_display_mode *dmode,
 				   struct videomode *vm)
 {
-	vm->hactive = dmode->hdisplay;
-	vm->hfront_porch = dmode->hsync_start - dmode->hdisplay;
-	vm->hsync_len = dmode->hsync_end - dmode->hsync_start;
-	vm->hback_porch = dmode->htotal - dmode->hsync_end;
+	vm->hactive = (u32)dmode->hdisplay;
+	vm->hfront_porch = (u32)dmode->hsync_start - (u32)dmode->hdisplay;
+	vm->hsync_len = (u32)dmode->hsync_end - (u32)dmode->hsync_start;
+	vm->hback_porch = (u32)dmode->htotal - (u32)dmode->hsync_end;
 
-	vm->vactive = dmode->vdisplay;
-	vm->vfront_porch = dmode->vsync_start - dmode->vdisplay;
-	vm->vsync_len = dmode->vsync_end - dmode->vsync_start;
-	vm->vback_porch = dmode->vtotal - dmode->vsync_end;
+	vm->vactive = (u32)dmode->vdisplay;
+	vm->vfront_porch = (u32)dmode->vsync_start - (u32)dmode->vdisplay;
+	vm->vsync_len = (u32)dmode->vsync_end - (u32)dmode->vsync_start;
+	vm->vback_porch = (u32)dmode->vtotal - (u32)dmode->vsync_end;
 
-	vm->pixelclock = dmode->clock * 1000;
+	vm->pixelclock = (ulong)dmode->clock * 1000UL;
 
 	vm->flags = 0;
-	if (dmode->flags & DRM_MODE_FLAG_PHSYNC)
-		vm->flags |= DISPLAY_FLAGS_HSYNC_HIGH;
-	else if (dmode->flags & DRM_MODE_FLAG_NHSYNC)
-		vm->flags |= DISPLAY_FLAGS_HSYNC_LOW;
-	if (dmode->flags & DRM_MODE_FLAG_PVSYNC)
-		vm->flags |= DISPLAY_FLAGS_VSYNC_HIGH;
-	else if (dmode->flags & DRM_MODE_FLAG_NVSYNC)
-		vm->flags |= DISPLAY_FLAGS_VSYNC_LOW;
-	if (dmode->flags & DRM_MODE_FLAG_INTERLACE)
-		vm->flags |= DISPLAY_FLAGS_INTERLACED;
-	if (dmode->flags & DRM_MODE_FLAG_DBLSCAN)
-		vm->flags |= DISPLAY_FLAGS_DOUBLESCAN;
-	if (dmode->flags & DRM_MODE_FLAG_DBLCLK)
-		vm->flags |= DISPLAY_FLAGS_DOUBLECLK;
+	if ((dmode->flags & DRM_MODE_FLAG_PHSYNC) != 0U) {
+		vm->flags |= (u32)DISPLAY_FLAGS_HSYNC_HIGH;
+	} else if ((dmode->flags & DRM_MODE_FLAG_NHSYNC) != 0U) {
+		vm->flags |= (u32)DISPLAY_FLAGS_HSYNC_LOW;
+	} else {
+		/* Do nothing */
+	}
+	if ((dmode->flags & DRM_MODE_FLAG_PVSYNC) != 0U) {
+		vm->flags |= (u32)DISPLAY_FLAGS_VSYNC_HIGH;
+	} else if ((dmode->flags & DRM_MODE_FLAG_NVSYNC) != 0U) {
+		vm->flags |= (u32)DISPLAY_FLAGS_VSYNC_LOW;
+	} else {
+		/* Do nothing */
+	}
+	if ((dmode->flags & DRM_MODE_FLAG_INTERLACE) != 0U) {
+		vm->flags |= (u32)DISPLAY_FLAGS_INTERLACED;
+	}
+	if ((dmode->flags & DRM_MODE_FLAG_DBLSCAN) != 0U) {
+		vm->flags |= (u32)DISPLAY_FLAGS_DOUBLESCAN;
+	}
+	if ((dmode->flags & DRM_MODE_FLAG_DBLCLK) != 0U) {
+		vm->flags |= (u32)DISPLAY_FLAGS_DOUBLECLK;
+	}
 }
+
+// PRQA S 5129 --
+// PRQA S 5125 --
+// PRQA S 5124 --
+// PRQA S 5118 --
+// PRQA S 3101 --
