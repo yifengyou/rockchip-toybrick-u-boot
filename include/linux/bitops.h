@@ -22,10 +22,10 @@
  * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
  */
 #define GENMASK(h, l) \
-	(((~0UL) << (l)) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
+	(((~0UL) << (l)) & (~0UL >> ((unsigned long)BITS_PER_LONG - 1UL - (h))))
 
 #define GENMASK_ULL(h, l) \
-	(((~0ULL) << (l)) & (~0ULL >> (BITS_PER_LONG_LONG - 1 - (h))))
+	(((~0ULL) << (l)) & (~0ULL >> ((unsigned long long)BITS_PER_LONG_LONG - 1ULL - (h))))
 
 /*
  * ffs: find first bit set. This is defined the same way as
