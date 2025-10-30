@@ -69,19 +69,19 @@ static int pwm_regulator_set_voltage(struct udevice *dev, int uvolt)
 {
 	struct pwm_regulator_info *priv = dev_get_priv(dev);
 	int duty_cycle;
-	int ret = 0;
+	int ret;
 
 	duty_cycle = pwm_voltage_to_duty_cycle_percentage(dev, uvolt);
 
 	ret = pwm_set_invert(priv->pwm, priv->pwm_id, priv->polarity);
-	if (ret) {
+	if (ret != 0) {
 		dev_err(dev, "Failed to init PWM\n");
 		return ret;
 	}
 
 	ret = pwm_set_config(priv->pwm, priv->pwm_id,
 			priv->period_ns, (priv->period_ns / 100) * duty_cycle);
-	if (ret) {
+	if (ret != 0) {
 		dev_err(dev, "Failed to configure PWM\n");
 		return ret;
 	}
@@ -98,7 +98,7 @@ static int pwm_regulator_ofdata_to_platdata(struct udevice *dev)
 	int ret;
 
 	ret = dev_read_phandle_with_args(dev, "pwms", "#pwm-cells", 0, 0, &args);
-	if (ret) {
+	if (ret != 0) {
 		debug("%s: Cannot get PWM phandle: ret=%d\n", __func__, ret);
 		return ret;
 	}
@@ -119,7 +119,7 @@ static int pwm_regulator_ofdata_to_platdata(struct udevice *dev)
 	}
 
 	ret = uclass_get_device_by_ofnode(UCLASS_PWM, args.node, &priv->pwm);
-	if (ret) {
+	if (ret != 0) {
 		debug("%s: Cannot get PWM: ret=%d\n", __func__, ret);
 		return ret;
 	}
@@ -131,6 +131,7 @@ static int pwm_regulator_probe(struct udevice *dev)
 {
 	struct pwm_regulator_info *priv = dev_get_priv(dev);
 	struct dm_regulator_uclass_platdata *uc_pdata;
+	int ret;
 
 	uc_pdata = dev_get_uclass_platdata(dev);
 
@@ -142,7 +143,10 @@ static int pwm_regulator_probe(struct udevice *dev)
 	if (priv->init_voltage > 0) {
 		debug("pwm-regulator(%s): init %d uV\n",
 		       dev->name, priv->init_voltage);
-		pwm_regulator_set_voltage(dev, priv->init_voltage);
+		ret = pwm_regulator_set_voltage(dev, priv->init_voltage);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	return 0;
@@ -166,5 +170,5 @@ U_BOOT_DRIVER(pwm_regulator) = {
 	.probe = pwm_regulator_probe,
 	.of_match = pwm_regulator_ids,
 	.ofdata_to_platdata	= pwm_regulator_ofdata_to_platdata,
-	.priv_auto_alloc_size	= sizeof(struct pwm_regulator_info),
+	.priv_auto_alloc_size	= (int)sizeof(struct pwm_regulator_info),
 };
