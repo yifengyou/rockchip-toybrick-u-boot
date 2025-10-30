@@ -9,8 +9,8 @@
  * published by the Free Software Foundation.
  */
 
-#ifndef __LINUX_MEDIA_BUS_FORMAT_H
-#define __LINUX_MEDIA_BUS_FORMAT_H
+#ifndef LINUX_MEDIA_BUS_FORMAT_H_
+#define LINUX_MEDIA_BUS_FORMAT_H_
 
 /*
  * These bus formats uniquely identify data formats on the data bus. Format 0
@@ -163,8 +163,8 @@
 #define MEDIA_BUS_FMT_AHSV8888_1X32		0x6001
 
 /* Panel Mirror control */
-#define DRM_MODE_FLAG_XMIRROR 			(1<<28)
-#define DRM_MODE_FLAG_YMIRROR 			(1<<29)
+#define DRM_MODE_FLAG_XMIRROR			(1ULL << 28U)
+#define DRM_MODE_FLAG_YMIRROR			(1ULL << 29U)
 #define DRM_MODE_FLAG_XYMIRROR			(DRM_MODE_FLAG_XMIRROR | DRM_MODE_FLAG_YMIRROR)
 
-#endif /* __LINUX_MEDIA_BUS_FORMAT_H */
+#endif /* LINUX_MEDIA_BUS_FORMAT_H_ */
