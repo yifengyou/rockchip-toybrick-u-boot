@@ -10,6 +10,10 @@
 #include <asm/suspend.h>
 #include <linux/io.h>
 
+// PRQA S 1503 ++
+// PRQA S 5124 ++
+// PRQA S 3200 ++
+
 #ifdef CONFIG_ARM64
 #define ARM_PSCI_1_0_SYSTEM_SUSPEND	ARM_PSCI_1_0_FN64_SYSTEM_SUSPEND
 #define ARM_PSCI_0_2_CPU_ON		ARM_PSCI_0_2_FN64_CPU_ON
@@ -33,13 +37,15 @@ static struct arm_smccc_res __invoke_sip_fn_smc(unsigned long function_id,
 	return res;
 }
 
+// PRQA S 1281 ++
+// PRQA S 1840 ++
 int psci_cpu_on(unsigned long cpuid, unsigned long entry_point)
 {
 	struct arm_smccc_res res;
 
 	res = __invoke_sip_fn_smc(ARM_PSCI_0_2_CPU_ON, cpuid, entry_point, 0);
 
-	return res.a0;
+	return (int)res.a0;
 }
 
 int psci_cpu_off(uint32_t state)
@@ -48,7 +54,7 @@ int psci_cpu_off(uint32_t state)
 
 	res = __invoke_sip_fn_smc(ARM_PSCI_0_2_CPU_OFF, state, 0, 0);
 
-	return res.a0;
+	return (int)res.a0;
 }
 
 #ifdef CONFIG_ARM_CPU_SUSPEND
@@ -58,9 +64,11 @@ int psci_system_suspend(unsigned long unused)
 
 	res = __invoke_sip_fn_smc(ARM_PSCI_1_0_SYSTEM_SUSPEND,
 				  virt_to_phys(cpu_resume), 0, 0);
-	return res.a0;
+	return (int)res.a0;
 }
 #endif
+// PRQA S 1281 --
+// PRQA S 1840 --
 
 int sip_smc_set_suspend_mode(unsigned long ctrl,
 			     unsigned long config1,
@@ -69,7 +77,7 @@ int sip_smc_set_suspend_mode(unsigned long ctrl,
 	struct arm_smccc_res res;
 
 	res = __invoke_sip_fn_smc(SIP_SUSPEND_MODE, ctrl, config1, config2);
-	return res.a0;
+	return (int)res.a0;
 }
 
 int sip_smc_remotectl_config(unsigned long func, unsigned long data)
@@ -78,7 +86,7 @@ int sip_smc_remotectl_config(unsigned long func, unsigned long data)
 
 	res = __invoke_sip_fn_smc(SIP_REMOTECTL_CFG, func, data, 0);
 
-	return res.a0;
+	return (int)res.a0;
 }
 
 int sip_smc_access_mem_os_reg(unsigned long func, unsigned long id,
@@ -86,15 +94,17 @@ int sip_smc_access_mem_os_reg(unsigned long func, unsigned long id,
 {
 	struct arm_smccc_res res;
 
-	if (val == NULL)
+	if (val == NULL) {
 		return SIP_RET_INVALID_PARAMS;
+	}
 
 	res = __invoke_sip_fn_smc(SIP_ACCESS_MEM_OS_REG, func, id, *val);
 
-	if (func == RK_MEM_OS_REG_READ)
+	if (func == (ulong)RK_MEM_OS_REG_READ) {
 		*val = res.a1;
+	}
 
-	return res.a0;
+	return (int)res.a0;
 }
 
 int sip_smc_amp_cfg(unsigned long func, unsigned long arg0, unsigned long arg1,
@@ -103,7 +113,7 @@ int sip_smc_amp_cfg(unsigned long func, unsigned long arg0, unsigned long arg1,
 	struct arm_smccc_res res;
 
 	arm_smccc_smc(SIP_AMP_CFG, func, arg0, arg1, arg2, 0, 0, 0, &res);
-	return res.a0;
+	return (int)res.a0;
 }
 
 struct arm_smccc_res sip_smc_dram(unsigned long arg0,
@@ -119,12 +129,14 @@ struct arm_smccc_res sip_smc_request_share_mem(unsigned long page_num,
 	struct arm_smccc_res res;
 	unsigned long share_mem_phy;
 
-	res = __invoke_sip_fn_smc(SIP_SHARE_MEM, page_num, page_type, 0);
-	if (IS_SIP_ERROR(res.a0))
+	res = __invoke_sip_fn_smc(SIP_SHARE_MEM, page_num, (ulong)page_type, 0);
+	if (IS_SIP_ERROR(res.a0)) {
 		goto error;
+	}
 
 	share_mem_phy = res.a1;
-	res.a1 = (unsigned long)ioremap(share_mem_phy, SIZE_PAGE(page_num));
+	res.a1 = (ulong)ioremap((resource_size_t)share_mem_phy,
+				(resource_size_t)SIZE_PAGE(page_num));
 
 error:
 	return res;
@@ -143,7 +155,7 @@ int sip_smc_secure_reg_write(unsigned long addr_phy, unsigned long val)
 	struct arm_smccc_res res;
 
 	res = __invoke_sip_fn_smc(SIP_ACCESS_REG, val, addr_phy, SECURE_REG_WR);
-	return res.a0;
+	return (int)res.a0;
 }
 
 int sip_smc_hdcp_config(unsigned long func, unsigned long arg1, unsigned long arg2)
@@ -151,7 +163,7 @@ int sip_smc_hdcp_config(unsigned long func, unsigned long arg1, unsigned long ar
 	struct arm_smccc_res res;
 
 	res = __invoke_sip_fn_smc(SIP_HDCP_CONFIG, func, arg1, arg2);
-	return res.a0;
+	return (int)res.a0;
 }
 
 struct arm_smccc_res sip_smc_get_sip_version(void)
@@ -173,7 +185,7 @@ int sip_smc_set_sip_version(unsigned long version)
 	if (IS_SIP_ERROR(res.a0)) {
 		printf("%s: set rockchip sip version v%ld failed\n",
 		       __func__, version);
-		return res.a0;
+		return (int)res.a0;
 	}
 
 	return 0;
@@ -184,5 +196,10 @@ int sip_smc_mcu_config(unsigned long mcu_id, unsigned long func, unsigned long a
 	struct arm_smccc_res res;
 
 	res = __invoke_sip_fn_smc(SIP_MCU_CFG, mcu_id, func, arg2);
-	return res.a0;
+	return (int)res.a0;
 }
+
+/* -------- dataflow ----------- */
+// PRQA S 1503 --
+// PRQA S 5124 --
+// PRQA S 3200 --

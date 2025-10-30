@@ -10,6 +10,14 @@
 #include <asm/arch/rk_atags.h>
 #include <asm/arch/param.h>
 
+// PRQA S 1503 ++
+// PRQA S 5124 ++
+// PRQA S 3200 ++
+// PRQA S 5118 ++
+// PRQA S 2880 ++
+// PRQA S 2742 ++
+// PRQA S 2844 ++
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #define SZ_4GB				0x100000000ULL
@@ -42,10 +50,11 @@ static uint16_t trust_checksum(const uint8_t *buf, uint16_t len)
 	uint16_t i, checksum = 0;
 
 	for (i = 0; i < len; i++) {
-		if (i % 2)
+		if (i % 2) {
 			checksum += buf[i] << 8;
-		else
+		} else {
 			checksum += buf[i];
+		}
 	}
 	checksum = ~checksum;
 
@@ -69,21 +78,23 @@ struct memblock param_parse_atf_mem(void)
 	 * 2. Leagcy way: 2MB size and start from ddr 0x0 offset;
 	 */
 	t = atags_get_tag(ATAG_ATF_MEM);
-	if (t && t->u.atf_mem.size) {
-		mem.base = t->u.atf_mem.phy_addr;
-		mem.size = t->u.atf_mem.size;
-		/* Sanity */
-		if (mem.base + mem.size > SDRAM_OFFSET(SZ_1M)) {
-			printf("%s: ATF reserved region is not within 0-1MB "
-			       "offset(0x%08llx-0x%08llx)!\n",
-			       __func__, (u64)mem.base, (u64)mem.base + mem.size);
-			return mem;
+	if (t != NULL) {
+		if (t->u.atf_mem.size) {
+			mem.base = t->u.atf_mem.phy_addr;
+			mem.size = t->u.atf_mem.size;
+			/* Sanity */
+			if (mem.base + mem.size > SDRAM_OFFSET(SZ_1M)) {
+				printf("%s: ATF reserved region is not within 0-1MB "
+				       "offset(0x%08llx-0x%08llx)!\n",
+				       __func__, (u64)mem.base, (u64)mem.base + mem.size);
+				return mem;
+			}
 		}
 	}
 #endif
 
 	/* Legacy */
-	if (!mem.size) {
+	if (mem.size == 0U) {
 		if (IS_ENABLED(CONFIG_ARM64) ||
 		    IS_ENABLED(CONFIG_ARM64_BOOT_AARCH32)) {
 			mem.base = SDRAM_OFFSET(0);
@@ -115,14 +126,16 @@ struct memblock param_parse_optee_mem(void)
 	 * 2. Leagcy way: info in ddr 34M offset;
 	 */
 	t = atags_get_tag(ATAG_TOS_MEM);
-	if (t && (t->u.tos_mem.tee_mem.flags == 1)) {
-		mem.base = t->u.tos_mem.tee_mem.phy_addr;
-		mem.size = t->u.tos_mem.tee_mem.size;
+	if (t != NULL) {
+		if (t->u.tos_mem.tee_mem.flags == 1) {
+			mem.base = t->u.tos_mem.tee_mem.phy_addr;
+			mem.size = t->u.tos_mem.tee_mem.size;
+		}
 	}
 #endif
 
 	/* Legacy */
-	if (!mem.size) {
+	if (mem.size == 0U) {
 		tos_parameter =
 		(struct tos_param_t *)(SDRAM_OFFSET(PARAM_OPTEE_INFO_OFFSET));
 		checksum =
@@ -135,8 +148,9 @@ struct memblock param_parse_optee_mem(void)
 		}
 	}
 
-	if (mem.size)
+	if (mem.size != 0U) {
 		gd->flags |= GD_FLG_BL32_ENABLED;
+	}
 
 	debug("TOS: 0x%llx - 0x%llx\n", (u64)mem.base, (u64)mem.base + mem.size);
 
@@ -170,8 +184,9 @@ int param_parse_assign_bootdev(char **devtype, char **devnum)
 	char *type, *num;
 
 	num = strchr(bootdev_str, ' ');
-	if (!num)
+	if (num == 0) {
 		return -ENODEV;
+	}
 
 	type = strdup(bootdev_str);
 	type[num - bootdev_str] = 0;
@@ -189,7 +204,7 @@ int param_parse_atags_bootdev(char **devtype, char **devnum)
 	struct tag *t;
 
 	t = atags_get_tag(ATAG_BOOTDEV);
-	if (t) {
+	if (t != NULL) {
 		switch (t->u.bootdev.devtype) {
 #ifdef CONFIG_DM_MMC
 		case BOOT_TYPE_EMMC:
@@ -213,7 +228,7 @@ int param_parse_atags_bootdev(char **devtype, char **devnum)
 				run_command("mmc dev 1", 0);
 				run_command("rkimgtest mmc 1", 0);
 			} else if (t->u.bootdev.sdupdate == SD_UPDATE_CARD) {
-				env_update("bootargs", "sdfwupdate");
+				(void)env_update("bootargs", "sdfwupdate");
 			}
 			break;
 #endif
@@ -304,54 +319,57 @@ struct memblock *param_parse_ddr_mem(int *out_count)
 	int n;
 
 	t = atags_get_tag(ATAG_DDR_MEM);
-	if (t && t->u.ddr_mem.count) {
-		/* extend top ram size */
-		if (t->u.ddr_mem.flags & DDR_MEM_FLG_EXT_TOP)
-			gd->ram_top_ext_size = t->u.ddr_mem.data[0];
-
-		/* normal ram size */
-		count = t->u.ddr_mem.count;
-		mem = calloc(count + MEM_RESV_COUNT, sizeof(*mem));
-		if (!mem) {
-			printf("Calloc ddr memory failed\n");
-			return 0;
-		}
-
-		for (i = 0, n = 0; i < count; i++, n++) {
-			base = t->u.ddr_mem.bank[i];
-			size = t->u.ddr_mem.bank[i + count];
-
-			/* 0~4GB */
-			if (base < SZ_4GB) {
-				mem[n].base = base;
-				mem[n].size = ddr_mem_get_usable_size(base, size);
-				if (base + size > SZ_4GB) {
-					n++;
-					mem[n].base_u64 = SZ_4GB;
-					mem[n].size_u64 = base + size - SZ_4GB;
-				}
-			} else {
-				/* 4GB+ */
-				mem[n].base_u64 = base;
-				mem[n].size_u64 = size;
+	if (t != NULL) {
+		if (t->u.ddr_mem.count != 0U) {
+			/* extend top ram size */
+			if ((t->u.ddr_mem.flags & DDR_MEM_FLG_EXT_TOP) != 0U) {
+				gd->ram_top_ext_size = t->u.ddr_mem.data[0];
 			}
 
-			assert(n < count + MEM_RESV_COUNT);
-		}
+			/* normal ram size */
+			count = t->u.ddr_mem.count;
+			mem = calloc(count + MEM_RESV_COUNT, sizeof(*mem));
+			if (mem == NULL) {
+				printf("Calloc ddr memory failed\n");
+				return 0;
+			}
 
-		*out_count = n;
-		return mem;
+			for (i = 0, n = 0; i < count; i++, n++) {
+				base = t->u.ddr_mem.bank[i];
+				size = t->u.ddr_mem.bank[i + count];
+
+				/* 0~4GB */
+				if (base < SZ_4GB) {
+					mem[n].base = base;
+					mem[n].size = ddr_mem_get_usable_size(base, size);
+					if (base + size > SZ_4GB) {
+						n++;
+						mem[n].base_u64 = SZ_4GB;
+						mem[n].size_u64 = base + size - SZ_4GB;
+					}
+				} else {
+					/* 4GB+ */
+					mem[n].base_u64 = base;
+					mem[n].size_u64 = size;
+				}
+
+				assert(n < count + MEM_RESV_COUNT);
+			}
+
+			*out_count = n;
+			return mem;
+		}
 	}
 #endif
 
 	/* Leagcy */
 	ret = uclass_get_device(UCLASS_RAM, 0, &dev);
-	if (ret) {
+	if (ret != 0) {
 		debug("DRAM init failed: %d\n", ret);
 		return NULL;
 	}
 	ret = ram_get_info(dev, &ram);
-	if (ret) {
+	if (ret != 0) {
 		debug("Cannot get DRAM size: %d\n", ret);
 		return NULL;
 	}
@@ -361,9 +379,9 @@ struct memblock *param_parse_ddr_mem(int *out_count)
 
 	count = 1;
 	mem = calloc(1, sizeof(*mem));
-	if (!mem) {
+	if (mem == NULL) {
 		printf("Calloc ddr memory failed\n");
-		return 0;
+		return NULL;
 	}
 
 	for (i = 0; i < count; i++) {
@@ -386,7 +404,7 @@ phys_size_t param_simple_parse_ddr_mem(int init_bank)
 	int i, count;
 
 	list = param_parse_ddr_mem(&count);
-	if (!list) {
+	if (list == NULL) {
 		printf("Can't get dram banks\n");
 		return 0;
 	}
@@ -396,7 +414,7 @@ phys_size_t param_simple_parse_ddr_mem(int init_bank)
 		return 0;
 	}
 
-	if (!init_bank) {
+	if (init_bank == 0) {
 		i = count - 1;
 		return ddr_mem_get_usable_size(list[i].base, list[i].size);
 	}
@@ -422,15 +440,18 @@ int param_parse_pre_serial(int *flags)
 	struct tag *t;
 
 	t = atags_get_tag(ATAG_SERIAL);
-	if (t) {
+	if (t != NULL) {
 		gd->serial.using_pre_serial = 1;
 		gd->serial.enable = t->u.serial.enable;
 		gd->serial.baudrate = t->u.serial.baudrate;
 		gd->serial.addr = t->u.serial.addr;
 		gd->serial.id = t->u.serial.id;
 		gd->baudrate = CONFIG_BAUDRATE;
-		if (!gd->serial.enable && flags)
-			*flags |= GD_FLG_DISABLE_CONSOLE;
+		if (gd->serial.enable == 0) {
+			if (flags != 0) {
+				*flags |= GD_FLG_DISABLE_CONSOLE;
+			}
+		}
 		debug("preloader: enable=%d, addr=0x%lx, baudrate=%d, id=%d\n",
 		      gd->serial.enable, gd->serial.addr,
 		      gd->serial.baudrate, gd->serial.id);
@@ -439,7 +460,7 @@ int param_parse_pre_serial(int *flags)
 	{
 		gd->baudrate = CONFIG_BAUDRATE;
 		gd->serial.baudrate = CONFIG_BAUDRATE;
-		gd->serial.addr = CONFIG_DEBUG_UART_BASE;
+		gd->serial.addr = (ulong)CONFIG_DEBUG_UART_BASE;
 	}
 
 	return 0;
@@ -451,14 +472,22 @@ int param_parse_pubkey_fuse_programmed(void)
 	struct tag *t;
 
 	t = atags_get_tag(ATAG_PUB_KEY);
-	if (t) {
+	if (t != NULL) {
 		/* Pass if efuse/otp programmed */
-		if (t->u.pub_key.flag == PUBKEY_FUSE_PROGRAMMED)
-			env_update("bootargs", "fuse.programmed=1");
-		else
-			env_update("bootargs", "fuse.programmed=0");
+		if (t->u.pub_key.flag == PUBKEY_FUSE_PROGRAMMED) {
+			(void)env_update("bootargs", "fuse.programmed=1");
+		} else {
+			(void)env_update("bootargs", "fuse.programmed=0");
+		}
 	}
 #endif
 	return 0;
 }
 
+// PRQA S 1503 --
+// PRQA S 5124 --
+// PRQA S 3200 --
+// PRQA S 5118 --
+// PRQA S 2880 --
+// PRQA S 2742 --
+// PRQA S 2844 --

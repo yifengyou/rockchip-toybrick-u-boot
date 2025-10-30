@@ -39,7 +39,7 @@ void resource_destroy(void);
  *
  * return 0 on success, otherwise fail.
  */
-int resource_setup_ram_list(struct blk_desc *dev_desc, void *hdr);
+int resource_setup_ram_list(struct blk_desc *desc, void *hdr);
 
 /*
  * rockchip_read_resource_file() - read file from resource.

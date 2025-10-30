@@ -11,6 +11,33 @@
 #include <asm/io.h>
 #include <asm/arch/rk_atags.h>
 
+// PRQA S 5124 ++
+// PRQA S 3200 ++
+// PRQA S 3408 ++
+// PRQA S 3305 ++
+// PRQA S 0310 ++
+// PRQA S 03430 ++
+// PRQA S 2810 ++
+// PRQA S 0311 ++
+// PRQA S 1503 ++
+// PRQA S 2880 ++
+// PRQA S 2096 ++
+// PRQA S 5118 ++
+
+// PRQA S 0753 ++
+// PRQA S 3432 ++
+// PRQA S 1502 ++
+
+// PRQA S 0404 ++
+// PRQA S 3408 ++
+// PRQA S 2844 ++
+// PRQA S 1504 ++
+// PRQA S 2991 ++
+// PRQA S 2992 ++
+// PRQA S 2993 ++
+// PRQA S 2995 ++
+// PRQA S 2996 ++
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #define MAX_BAD_MEMBLK		8
@@ -25,7 +52,7 @@ struct bidram plat_bidram __section(".data") = { .has_init = false, };
 
 static int bidram_has_init(void)
 {
-	if (!plat_bidram.has_init) {
+	if (plat_bidram.has_init == false) {
 		BIDRAM_E("Framework is not initialized\n");
 		return 0;
 	}
@@ -36,27 +63,31 @@ static int bidram_has_init(void)
 void bidram_dump(void)
 {
 	struct bidram *bidram = &plat_bidram;
-	struct lmb *lmb = &bidram->lmb;
+	struct lmb *_lmb = &bidram->lmb;
 	struct memblock *mem;
 	struct list_head *node;
 	ulong memory_size = 0;
 	ulong reserved_size = 0;
 	ulong i;
 
-	if (!bidram_has_init())
+	if (bidram_has_init() == 0) {
 		return;
+	}
 
 	printf("\n\nbidram_dump_all:\n");
 
 	/* Memory pool */
 	printf("    --------------------------------------------------------------------\n");
-	for (i = 0; i < lmb->memory.cnt; i++) {
-		memory_size += lmb->memory.region[i].size;
+	for (i = 0; i < _lmb->memory.cnt; i++) {
+		if (i >= ARRAY_SIZE(_lmb->memory.region)) {
+			break;
+		}
+		memory_size += _lmb->memory.region[i].size;
 		printf("    memory.rgn[%ld].addr     = 0x%08lx - 0x%08lx (size: 0x%08lx)\n", i,
-		       (ulong)lmb->memory.region[i].base,
-		       (ulong)lmb->memory.region[i].base +
-		       (ulong)lmb->memory.region[i].size,
-		       (ulong)lmb->memory.region[i].size);
+		       (ulong)_lmb->memory.region[i].base,
+		       (ulong)_lmb->memory.region[i].base +
+		       (ulong)_lmb->memory.region[i].size,
+		       (ulong)_lmb->memory.region[i].size);
 	}
 	printf("\n    memory.total	   = 0x%08lx (%ld MiB. %ld KiB)\n",
 	       (ulong)memory_size,
@@ -66,8 +97,8 @@ void bidram_dump(void)
 	/* Reserved */
 	i = 0;
 	printf("    --------------------------------------------------------------------\n");
-	list_for_each(node, &bidram->reserved_head) {
-		mem = list_entry(node, struct memblock, node);
+	list_for_each((node), (&bidram->reserved_head)) {
+		mem = list_entry((node), struct memblock, node);
 		reserved_size += mem->size;
 		printf("    reserved.rgn[%ld].name   = \"%s\"\n", i, mem->attr.name);
 		printf("		   .addr   = 0x%08lx - 0x%08lx (size: 0x%08lx)\n",
@@ -83,13 +114,16 @@ void bidram_dump(void)
 	/* LMB core reserved */
 	printf("    --------------------------------------------------------------------\n");
 	reserved_size = 0;
-	for (i = 0; i < lmb->reserved.cnt; i++) {
-		reserved_size += lmb->reserved.region[i].size;
+	for (i = 0; i < _lmb->reserved.cnt; i++) {
+		if (i >= ARRAY_SIZE(_lmb->reserved.region)) {
+			break;
+		}
+		reserved_size += _lmb->reserved.region[i].size;
 		printf("    LMB.reserved[%ld].addr   = 0x%08lx - 0x%08lx (size: 0x%08lx)\n", i,
-		       (ulong)lmb->reserved.region[i].base,
-		       (ulong)lmb->reserved.region[i].base +
-		       (ulong)lmb->reserved.region[i].size,
-		       (ulong)lmb->reserved.region[i].size);
+		       (ulong)_lmb->reserved.region[i].base,
+		       (ulong)_lmb->reserved.region[i].base +
+		       (ulong)_lmb->reserved.region[i].size,
+		       (ulong)_lmb->reserved.region[i].size);
 	}
 
 	printf("\n    reserved.core.total	   = 0x%08lx (%ld MiB. %ld KiB)\n",
@@ -104,16 +138,19 @@ static int bidram_add(phys_addr_t base, phys_size_t size)
 	struct bidram *bidram = &plat_bidram;
 	int ret;
 
-	if (!bidram_has_init())
+	if (bidram_has_init() == 0) {
 		return -ENOSYS;
+	}
 
-	if (!size)
+	if (size == 0U) {
 		return -EINVAL;
+	}
 
-	ret = lmb_add(&bidram->lmb, base, size);
-	if (ret < 0)
+	ret = (int)lmb_add(&bidram->lmb, base, size);
+	if (ret < 0) {
 		BIDRAM_E("Failed to add bidram at 0x%08lx - 0x%08lx\n",
 			 (ulong)base, (ulong)(base + size));
+	}
 
 	return (ret >= 0) ? 0 : ret;
 }
@@ -121,10 +158,10 @@ static int bidram_add(phys_addr_t base, phys_size_t size)
 void bidram_gen_gd_bi_dram(void)
 {
 	struct bidram *bidram = &plat_bidram;
-	struct lmb *lmb = &plat_bidram.lmb;
-	struct lmb_property *mem_rgn = lmb->memory.region;
-	struct lmb_property *res_rgn = lmb->reserved.region;
-	int rsv_cnt = lmb->reserved.cnt;
+	struct lmb *_lmb = &plat_bidram.lmb;
+	struct lmb_property *mem_rgn = _lmb->memory.region;
+	struct lmb_property *res_rgn = _lmb->reserved.region;
+	int rsv_cnt = (int)_lmb->reserved.cnt;
 	int i, idx = 0;
 
 	if (!gd || !gd->bd) {
@@ -140,7 +177,7 @@ void bidram_gen_gd_bi_dram(void)
 	 *
 	 * Here handle that: there is the only one dram bank available.
 	 */
-	if (rsv_cnt == 1 && !res_rgn[0].base && !res_rgn[0].size) {
+	if (rsv_cnt == 1 && res_rgn[0].base == 0U && res_rgn[0].size == 0U) {
 		gd->bd->bi_dram[idx].start = mem_rgn[0].base;
 		gd->bd->bi_dram[idx].size = mem_rgn[0].size;
 		idx++;
@@ -158,23 +195,26 @@ void bidram_gen_gd_bi_dram(void)
 	/*
 	 * Note: If reserved rgn is not from sdram start, idx=1 now, otherwise 0.
 	 */
-	for (i = 0; i < rsv_cnt; i++, idx++) {
-		if (res_rgn[i].base + res_rgn[i].size >= gd->ram_top)
+	for (i = 0; i < rsv_cnt; i++) {
+		if (res_rgn[i].base + res_rgn[i].size >= gd->ram_top) {
 			goto done;
+		}
 
 		gd->bd->bi_dram[idx].start = res_rgn[i].base + res_rgn[i].size;
-		if (i + 1 < rsv_cnt)
+		if (i + 1 < rsv_cnt) {
 			gd->bd->bi_dram[idx].size = res_rgn[i + 1].base -
 					    gd->bd->bi_dram[idx].start;
-		else
+		} else {
 			gd->bd->bi_dram[idx].size = gd->ram_top -
 					    gd->bd->bi_dram[idx].start;
+		}
+		idx++;
 	}
 done:
 	/* Append 4GB+ memory blocks and extend ram top */
 	if (bidram->fixup) {
 		/* extend ram top */
-		if (gd->ram_top_ext_size) {
+		if (gd->ram_top_ext_size != 0U) {
 		        int pos = idx - 1;
 			ulong top;
 
@@ -189,8 +229,9 @@ done:
 
 		/* append 4GB+ */
 		for (i = 0; i < MEM_RESV_COUNT; i++) {
-			if (!bidram->size_u64[i])
+			if (bidram->size_u64[i] == 0U) {
 				continue;
+			}
 			gd->bd->bi_dram[idx].start = bidram->base_u64[i];
 			gd->bd->bi_dram[idx].size  = bidram->size_u64[i];
 			BIDRAM_D("FIXUP: gd->bi_dram[%d]: start=0x%llx, size=0x%llx\n",
@@ -224,11 +265,13 @@ u64 bidram_append_size(void)
 	int i;
 
 	/* 4GB+ */
-	for (i = 0; i < MEM_RESV_COUNT; i++)
+	for (i = 0; i < MEM_RESV_COUNT; i++) {
 		size += bidram->size_u64[i];
+	}
 
-	if (gd->ram_top_ext_size)
+	if (gd->ram_top_ext_size != 0U) {
 		size += gd->ram_top_ext_size;
+	}
 
 	return size;
 }
@@ -236,7 +279,7 @@ u64 bidram_append_size(void)
 static int bidram_is_overlap(phys_addr_t base1, phys_size_t size1,
 			     phys_addr_t base2, phys_size_t size2)
 {
-	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
+	return (base1 < (base2 + size2)) && (base2 < (base1 + size1)) ? 1 : 0;
 }
 
 struct memblock *bidram_reserved_is_overlap(phys_addr_t base, phys_size_t size)
@@ -245,13 +288,15 @@ struct memblock *bidram_reserved_is_overlap(phys_addr_t base, phys_size_t size)
 	struct list_head *node;
 	struct memblock *mem;
 
-	if (!bidram_has_init())
-		return false;
+	if (bidram_has_init() == 0) {
+		return NULL;
+	}
 
-	list_for_each(node, &bidram->reserved_head) {
-		mem = list_entry(node, struct memblock, node);
-		if (bidram_is_overlap(mem->base, mem->size, base, size))
+	list_for_each((node), (&bidram->reserved_head)) {
+		mem = list_entry((node), struct memblock, node);
+		if (bidram_is_overlap(mem->base, mem->size, base, size) == 1) {
 			return mem;
+		}
 	}
 
 	return NULL;
@@ -267,8 +312,9 @@ static int bidram_core_reserve(enum memblk_id id, const char *mem_name,
 	const char *name;
 	int ret;
 
-	if (!bidram_has_init())
+	if (bidram_has_init() == 0) {
 		return -ENOSYS;
+	}
 
 	if (id == MEM_BY_NAME) {
 		if (!mem_name) {
@@ -287,36 +333,39 @@ static int bidram_core_reserve(enum memblk_id id, const char *mem_name,
 		}
 	}
 
-	if (!name) {
+	if (name == NULL) {
 		BIDRAM_E("NULL name for reserved bidram\n");
 		return -EINVAL;
 	}
 
-	if (!size)
+	if (size == 0U) {
 		return 0;
+	}
 
 	/* Check overlap */
-	list_for_each(node, &bidram->reserved_head) {
-		mem = list_entry(node, struct memblock, node);
+	list_for_each((node), (&bidram->reserved_head)) {
+		mem = list_entry((node), struct memblock, node);
 		BIDRAM_D("Has reserved: %s 0x%08lx - 0x%08lx\n",
 			 mem->attr.name, (ulong)mem->base,
 			 (ulong)(mem->base + mem->size));
-		if (!strcmp(mem->attr.name, name)) {
+		if (strcmp(mem->attr.name, name) == 0) {
 			BIDRAM_E("Failed to double reserve for existence \"%s\"\n", name);
 			return -EEXIST;
-		} else if (bidram_is_overlap(mem->base, mem->size, base, size)) {
+		} else if (bidram_is_overlap(mem->base, mem->size, base, size) == 1) {
 			BIDRAM_D("\"%s\" (0x%08lx - 0x%08lx) reserve is "
 				 "overlap with existence \"%s\" (0x%08lx - "
 				 "0x%08lx)\n",
 				 name, (ulong)base, (ulong)(base + size), mem->attr.name,
 				 (ulong)mem->base, (ulong)(mem->base + mem->size));
+		} else {
+			/* nothing */
 		}
 	}
 
 	BIDRAM_D("Reserve: \"%s\" 0x%08lx - 0x%08lx\n",
 		 name, (ulong)base, (ulong)(base + size));
 
-	ret = lmb_reserve(&bidram->lmb, base, size);
+	ret = (int)lmb_reserve(&bidram->lmb, base, size);
 	if (ret >= 0) {
 		mem = malloc(sizeof(*mem));
 		if (!mem) {
@@ -329,10 +378,11 @@ static int bidram_core_reserve(enum memblk_id id, const char *mem_name,
 		if (sysmem_has_init()) {
 			void *paddr;
 
-			if (id == MEM_BY_NAME)
+			if (id == MEM_BY_NAME) {
 				paddr = sysmem_alloc_base_by_name(name, base, size);
-			else
+			} else {
 				paddr = sysmem_alloc_base(id, base, size);
+			}
 			if (!paddr) {
 				BIDRAM_E("Sync \"%s\" to sysmem failed\n", name);
 				return -ENOMEM;
@@ -362,10 +412,11 @@ int bidram_reserve(enum memblk_id id, phys_addr_t base, phys_size_t size)
 	int ret;
 
 	ret = bidram_core_reserve(id, NULL, base, size);
-	if (!ret)
+	if (ret == 0) {
 		bidram_gen_gd_bi_dram();
-	else
+	} else {
 		bidram_dump();
+	}
 
 	return ret;
 }
@@ -376,39 +427,40 @@ int bidram_reserve_by_name(const char *name,
 	int ret;
 
 	ret = bidram_core_reserve(MEM_BY_NAME, name, base, size);
-	if (!ret)
+	if (ret == 0) {
 		bidram_gen_gd_bi_dram();
-	else
+	} else {
 		bidram_dump();
+	}
 
 	return ret;
 }
 
 int bidram_initr(void)
 {
-	return !bidram_get_ram_size();
+	return (bidram_get_ram_size() == 0U) ? 1 : 0;
 }
 
 phys_size_t bidram_get_ram_size(void)
 {
-	struct bidram *bidram = &plat_bidram;
+	struct bidram *_bidram = &plat_bidram;
 	struct memblock bad[MAX_BAD_MEMBLK];
 	struct memblock *list;
-	phys_size_t ram_addr_end = CONFIG_SYS_SDRAM_BASE;
+	phys_size_t ram_addr_end;
 	phys_addr_t end_addr;
 	parse_fn_t parse_fn;
 	int i, count, ret;
-	int bad_cnt = 0, n = 0;
+	int bad_cnt, n;
 	char bad_name[12];
 
 	parse_fn = board_bidram_parse_fn();
-	if (!parse_fn) {
+	if (parse_fn == NULL) {
 		BIDRAM_E("Can't find dram parse fn\n");
 		return 0;
 	}
 
 	list = parse_fn(&count);
-	if (!list) {
+	if (list == NULL) {
 		BIDRAM_E("Can't get dram banks\n");
 		return 0;
 	}
@@ -420,9 +472,13 @@ phys_size_t bidram_get_ram_size(void)
 	}
 
 	/* Initial plat_bidram */
-	lmb_init(&bidram->lmb);
-	INIT_LIST_HEAD(&bidram->reserved_head);
-	bidram->has_init = true;
+	lmb_init(&_bidram->lmb);
+	INIT_LIST_HEAD(&_bidram->reserved_head);
+	_bidram->has_init = true;
+
+	n = 0;
+	bad_cnt = 0;
+	ram_addr_end = CONFIG_SYS_SDRAM_BASE;
 
 	/* Initial memory pool */
 	for (i = 0; i < count; i++) {
@@ -430,11 +486,11 @@ phys_size_t bidram_get_ram_size(void)
 			 i, (ulong)list[i].base,
 			 (ulong)list[i].base + (ulong)list[i].size);
 
-		if (!list[i].size) {
+		if (list[i].size == 0U) {
 			/* handle 4GB+ */
-			if (list[i].size_u64 && n < MEM_RESV_COUNT) {
-				bidram->base_u64[n] = list[i].base_u64;
-				bidram->size_u64[n] = list[i].size_u64;
+			if (list[i].size_u64 != 0U && n < MEM_RESV_COUNT) {
+				_bidram->base_u64[n] = list[i].base_u64;
+				_bidram->size_u64[n] = list[i].size_u64;
 				n++;
 			}
 			continue;
@@ -446,9 +502,8 @@ phys_size_t bidram_get_ram_size(void)
 		/* This is a bad dram bank? record it */
 		if (i > 0) {
 			end_addr = list[i - 1].base + list[i - 1].size;
-
 			if (list[i].base != end_addr) {
-				snprintf(bad_name, 12, "%s%d", "BAD_RAM.", i - 1);
+				(void)snprintf(bad_name, 12, "%s%d", "BAD_RAM.", i - 1);
 				bad[bad_cnt].attr.name = strdup(bad_name);
 				bad[bad_cnt].base = end_addr;
 				bad[bad_cnt].size = list[i].base - end_addr;
@@ -462,42 +517,43 @@ phys_size_t bidram_get_ram_size(void)
 	}
 
 	ret = bidram_add(CONFIG_SYS_SDRAM_BASE,
-			 ram_addr_end - CONFIG_SYS_SDRAM_BASE);
-	if (ret) {
-		BIDRAM_E("Failed to add bidram from bi_dram[%d]\n", i);
+			 ram_addr_end - (phys_size_t)CONFIG_SYS_SDRAM_BASE);
+	if (ret != 0) {
+		BIDRAM_E("Failed to add _bidram from bi_dram[%d]\n", i);
 		return 0;
 	}
 
 	/* Reserve bad dram bank after bidram_add(), treat as reserved region */
 	for (i = 0; i < bad_cnt; i++) {
-		if (gd->flags & GD_FLG_RELOC)
+		if ((gd->flags & (u32)GD_FLG_RELOC) != 0U) {
 			BIDRAM_R("Bad memblk%d: 0x%08lx - 0x%08lx\n",
 				 i, (ulong)bad[i].base,
 				 (ulong)bad[i].base + (ulong)bad[i].size);
+		}
 
 		ret = bidram_reserve_by_name(bad[i].attr.name,
 					     bad[i].base, bad[i].size);
-		if (ret) {
+		if (ret != 0) {
 			BIDRAM_E("Failed to add bad memblk[%d]\n", i);
 			return 0;
 		}
 	}
 
 	/* Reserved for board */
-	ret = board_bidram_reserve(bidram);
-	if (ret) {
-		BIDRAM_E("Failed to reserve bidram for board\n");
+	ret = board_bidram_reserve(_bidram);
+	if (ret != 0) {
+		BIDRAM_E("Failed to reserve _bidram for board\n");
 		return 0;
 	}
 
 	BIDRAM_D("DRAM size: 0x%08lx\n",
-		 (ulong)ram_addr_end - CONFIG_SYS_SDRAM_BASE);
+		 (ulong)ram_addr_end - (ulong)CONFIG_SYS_SDRAM_BASE);
 
 #ifdef DEBUG
 	bidram_dump();
 #endif
 
-	return (ram_addr_end - CONFIG_SYS_SDRAM_BASE);
+	return ((ram_addr_end) - (phys_size_t)CONFIG_SYS_SDRAM_BASE);
 }
 
 __weak parse_fn_t board_bidram_parse_fn(void)
@@ -524,3 +580,29 @@ U_BOOT_CMD(
 	"Dump bidram layout",
 	""
 );
+
+// PRQA S 5124 --
+// PRQA S 3200 --
+// PRQA S 3408 --
+// PRQA S 3305 --
+// PRQA S 0310 --
+// PRQA S 03430 --
+// PRQA S 2810 --
+// PRQA S 0311 --
+// PRQA S 1503 --
+// PRQA S 2880 --
+// PRQA S 2096 --
+// PRQA S 5118 --
+// PRQA S 0753 --
+// PRQA S 3432 --
+// PRQA S 1502 --
+// PRQA S 0404 --
+// PRQA S 3408 --
+// PRQA S 2844 --
+// PRQA S 1504 --
+
+// PRQA S 2991 --
+// PRQA S 2992 --
+// PRQA S 2993 --
+// PRQA S 2995 --
+// PRQA S 2996 --

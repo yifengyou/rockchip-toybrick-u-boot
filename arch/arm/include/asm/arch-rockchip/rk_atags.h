@@ -68,7 +68,7 @@
 #define SOC_FLAGS_TDBT		(1 << 0)
 
 /* pub key programmed magic */
-#define PUBKEY_FUSE_PROGRAMMED	0x4B415352
+#define PUBKEY_FUSE_PROGRAMMED	0x4B415352U
 
 /*
  * boot1p.param[2] for ATF/OPTEE. The fields:

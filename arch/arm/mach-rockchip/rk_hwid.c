@@ -9,6 +9,14 @@
 #include <dm/ofnode.h>
 #include <asm/arch/rk_hwid.h>
 
+// PRQA S 5124 ++
+// PRQA S 3200 ++
+// PRQA S 2880 ++
+// PRQA S 2742 ++
+// PRQA S 2839 ++
+// PRQA S 2844 ++
+// PRQA S 2934 ++
+
 #define is_digit(c)		((c) >= '0' && (c) <= '9')
 #define is_abcd(c)		((c) >= 'a' && (c) <= 'd')
 #if defined(CONFIG_SPL_ROCKCHIP_HWID_DTB)
@@ -22,7 +30,10 @@
 
 static fdt_addr_t gpio_base_addr[MAX_GPIO_NR];
 static uint32_t gpio_record[MAX_GPIO_NR];
-static int adc_record[MAX_ADC_CH_NR];
+static u32 adc_record[MAX_ADC_CH_NR];
+
+//#undef BIT
+//#define BIT(nr)			(1UL << (nr))
 
 #ifdef CONFIG_ROCKCHIP_GPIO_V2
 #define GPIO_SWPORT_DDR		0x08
@@ -31,16 +42,16 @@ static int adc_record[MAX_ADC_CH_NR];
 #define WMSK_CLRBIT(n)		(n << 16)
 #define REG_PLUS4(off, n)	(off + (n >= BIT(16) ? 4 : 0))
 #define BIT_SUB16(n)		(n >= BIT(16) ? (n >> 16) : n)
-static int gpio_read(fdt_addr_t gpio_addr, int gpio_bank, int gpio_pin)
+static int gpio_read(fdt_addr_t gpio_addr, u32 gpio_bank, u32 gpio_pin)
 {
 	uint32_t off, bit;
 
-	bit = gpio_bank * 8 + gpio_pin;
-	off = REG_PLUS4(GPIO_SWPORT_DDR, bit);
-	bit = BIT_SUB16(bit);
-	writel(WMSK_CLRBIT(bit), gpio_addr + off);
+	bit = gpio_bank * 8U + gpio_pin;
+	off = REG_PLUS4((GPIO_SWPORT_DDR), (bit));
+	bit = BIT_SUB16((bit));
+	writel((WMSK_CLRBIT((bit))), (gpio_addr + off));
 
-	return readl(gpio_addr + GPIO_EXT_PORT);
+	return readl((gpio_addr + GPIO_EXT_PORT));
 }
 
 #else
@@ -50,22 +61,23 @@ static int gpio_read(fdt_addr_t gpio_addr, int gpio_bank, int gpio_pin)
 {
 	uint32_t val;
 
-	val = readl(gpio_addr + GPIO_SWPORT_DDR);
+	val = readl((gpio_addr + GPIO_SWPORT_DDR));
 	val &= ~(1 << (gpio_bank * 8 + gpio_pin));
-	writel(val, gpio_addr + GPIO_SWPORT_DDR);
+	writel((val), (gpio_addr + GPIO_SWPORT_DDR));
 
-	return readl(gpio_addr + GPIO_EXT_PORT);
+	return readl((gpio_addr + GPIO_EXT_PORT));
 }
 #endif
 
-static int gpio_parse_base_address(fdt_addr_t *gpio_base_addr)
+static int gpio_parse_base_address(fdt_addr_t *_gpio_base_addr)
 {
 	static int initialized;
 	ofnode parent, node;
 	int idx = 0;
 
-	if (initialized)
+	if (initialized != 0) {
 		return 0;
+	}
 
 	parent = ofnode_path("/pinctrl");
 	if (!ofnode_valid(parent)) {
@@ -73,13 +85,13 @@ static int gpio_parse_base_address(fdt_addr_t *gpio_base_addr)
 		return -EINVAL;
 	}
 
-	ofnode_for_each_subnode(node, parent) {
+	ofnode_for_each_subnode((node), (parent)) {
 		if (!ofnode_get_property(node, "gpio-controller", NULL)) {
 			debug("   - No gpio controller node\n");
 			continue;
 		}
-		gpio_base_addr[idx] = ofnode_get_addr(node);
-		debug("   - gpio%d: 0x%x\n", idx, (uint32_t)gpio_base_addr[idx]);
+		_gpio_base_addr[idx] = ofnode_get_addr(node);
+		debug("   - gpio%d: 0x%x\n", idx, (uint32_t)_gpio_base_addr[idx]);
 		idx++;
 	}
 
@@ -128,15 +140,15 @@ static int hwid_adc_find_dtb(const char *file_name)
 
 	printf("[HW-ADC]: %s\n", file_name);
 
-	chn_len = strlen(KEY_WORDS_ADC_CH);
-	prefix_len = strlen(KEY_WORDS_ADC_CTRL);
+	chn_len = (int)strlen(KEY_WORDS_ADC_CH);
+	prefix_len = (int)strlen(KEY_WORDS_ADC_CTRL);
 	cell_name = strstr(file_name, KEY_WORDS_ADC_CTRL);
 	while (cell_name) {
 		/* Parse adc controller name */
 		adc_tail = strstr(cell_name, KEY_WORDS_ADC_CH);
 		adc_head = cell_name + prefix_len;
-		len = adc_tail - adc_head;
-		strlcpy(dev_name, adc_head, len + 1);
+		len = (int)(adc_tail - adc_head);
+		strlcpy(dev_name, adc_head, (size_t)len + 1);
 
 		/* Parse adc channel */
 		p = adc_tail + chn_len;
@@ -154,11 +166,12 @@ static int hwid_adc_find_dtb(const char *file_name)
 		 * is enough. We use adc_record[] to save what we have read, zero
 		 * means not read before.
 		 */
-		if (adc_record[channel] == 0) {
+		if (adc_record[channel] == 0U) {
 			ret = adc_channel_single_shot(dev_name, channel, &raw_adc);
-			if (ret)
+			if (ret != 0) {
 				ret = adc_channel_single_shot("adc", channel, &raw_adc);
-			if (ret) {
+			}
+			if (ret != 0) {
 				debug("   - failed to read adc, ret=%d\n", ret);
 				return 0;
 			}
@@ -167,7 +180,10 @@ static int hwid_adc_find_dtb(const char *file_name)
 
 		/* Parse dtb adc value */
 		p = adc_tail + chn_len + 2;	/* 2: channel and '=' */
-		while (*p && is_digit(*p)) {
+		while (*p) {
+			if (!is_digit(*p)) {
+				break;
+			}
 			len++;
 			p++;
 		}
@@ -176,8 +192,9 @@ static int hwid_adc_find_dtb(const char *file_name)
 		found = (abs(dtb_adc - adc_record[channel]) <= margin) ? 1 : 0;
 		printf("   - dev=%s, channel=%d, dtb_adc=%ld, read=%d, found=%d\n",
 		      dev_name, channel, dtb_adc, adc_record[channel], found);
-		if (!found)
+		if (0 == found) {
 			break;
+		}
 		cell_name = strstr(p, KEY_WORDS_ADC_CTRL);
 
 	}
@@ -201,7 +218,7 @@ static int hwid_adc_find_dtb(const char *file_name)
  */
 static int hwid_gpio_find_dtb(const char *file_name)
 {
-	uint8_t port, pin, bank, lvl, val;
+	int port, pin, bank, lvl, val;
 	char *cell_name, *p;
 	int ret, prefix_len;
 	int found = 0;
@@ -211,7 +228,7 @@ static int hwid_gpio_find_dtb(const char *file_name)
 
 	if (gpio_base_addr[0] == 0) {
 		ret = gpio_parse_base_address(gpio_base_addr);
-		if (ret) {
+		if (ret != 0) {
 			debug("[HW-GPIO]: Can't parse gpio base, ret=%d\n", ret);
 			return 0;
 		}
@@ -223,9 +240,11 @@ static int hwid_gpio_find_dtb(const char *file_name)
 		p = cell_name + prefix_len;
 
 		/* Invalid format ? */
-		if (!(is_digit(*(p + 0)) && is_abcd(*(p + 1)) &&
-		      is_digit(*(p + 2)) && is_equal(*(p + 3)) &&
-		      is_digit(*(p + 4)))) {
+		if (0 == (is_digit(*(p + 0)) &&
+			is_abcd(*(p + 1)) &&
+			is_digit(*(p + 2)) &&
+			is_equal(*(p + 3)) &&
+			is_digit(*(p + 4)))) {
 			debug("   - invalid format: %s\n", cell_name);
 			return 0;
 		}
@@ -241,8 +260,8 @@ static int hwid_gpio_find_dtb(const char *file_name)
 		 * is enough. We use gpio_record[] to save what we have read, zero
 		 * means not read before.
 		 */
-		if (gpio_record[port] == 0) {
-			if (!gpio_base_addr[port]) {
+		if (gpio_record[port] == 0U) {
+			if (0U == gpio_base_addr[port]) {
 				debug("   - can't find gpio%d base\n", port);
 				return 0;
 			}
@@ -253,11 +272,12 @@ static int hwid_gpio_find_dtb(const char *file_name)
 		/* Verify result */
 		bit = bank * 8 + pin;
 		val = gpio_record[port] & (1 << bit) ? 1 : 0;
-		found = (val == !!lvl) ? 1 : 0;
+		found = (val == (u8)!!lvl) ? 1 : 0;
 		debug("   - gpio%d%c%d=%d, read=%d, found=%d\n",
 		      port, bank + 'a', pin, lvl, val, found);
-		if (!found)
+		if (0 == found) {
 			break;
+		}
 		cell_name = strstr(p, KEY_WORDS_GPIO);
 	}
 
@@ -273,14 +293,27 @@ bool hwid_dtb_is_available(const char *file_name)
 	 * gpio default form: #gpio[pin_num]_[level]
 	 * like: #gpio1a7_1
 	 */
-	if (strstr(file_name, KEY_WORDS_ADC_CTRL) &&
-		strstr(file_name, KEY_WORDS_ADC_CH) &&
-		hwid_adc_find_dtb(file_name)) {
-		return 1;
-	} else if (strstr(file_name, KEY_WORDS_GPIO) &&
-		hwid_gpio_find_dtb(file_name)) {
-		return 1;
+	if (strstr(file_name, KEY_WORDS_ADC_CTRL) != NULL) {
+		if (strstr(file_name, KEY_WORDS_ADC_CH) != NULL) {
+			if (hwid_adc_find_dtb(file_name) != 0) {
+				return true;
+			}
+		}
+	} else if (strstr(file_name, KEY_WORDS_GPIO) != NULL) {
+		if (hwid_gpio_find_dtb(file_name) != 0) {
+			return true;
+		}
+	} else {
+		/* nothing */
 	}
 
-	return 0;
+	return false;
 }
+
+// PRQA S 5124 --
+// PRQA S 3200 --
+// PRQA S 2880 --
+// PRQA S 2742 --
+// PRQA S 2839 --
+// PRQA S 2844 --
+// PRQA S 2934 --

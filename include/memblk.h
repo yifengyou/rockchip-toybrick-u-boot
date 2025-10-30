@@ -61,39 +61,39 @@ struct memblock {
 
 extern const struct memblk_attr *mem_attr;
 
-#define SIZE_MB(len)		((len) >> 20)
-#define SIZE_KB(len)		(((len) % (1 << 20)) >> 10)
+#define SIZE_MB(len)		((len) / (1024UL * 1024UL))
+#define SIZE_KB(len)		((len) / 1024UL)
 
 #define F_NONE			0
 
 /* Over-Flow-Check for region tail */
-#define F_OFC			(1 << 0)
+#define F_OFC			(0x00001U)
 
 /* Over-Flow-Check for region Head, only for U-Boot stack */
-#define F_HOFC			(1 << 1)
+#define F_HOFC			(0x00002U)
 
 /* Memory can be overlap by fdt reserved memory, deprecated */
-#define F_OVERLAP		(1 << 2)
+#define F_OVERLAP		(0x00004U)
 
 /* The region start address should be aligned to cacheline size */
-#define F_CACHELINE_ALIGN	(1 << 3)
+#define F_CACHELINE_ALIGN	(0x00008U)
 
 /* Kernel 'reserved-memory' */
-#define F_KMEM_RESERVED		(1 << 4)
+#define F_KMEM_RESERVED		(0x00010U)
 
 /* The region can be overlap by kernel 'reserved-memory' */
-#define F_KMEM_CAN_OVERLAP	(1 << 5)
+#define F_KMEM_CAN_OVERLAP	(0x00020U)
 
 /* Ignore invisible region reserved by bidram */
-#define F_IGNORE_INVISIBLE	(1 << 6)
+#define F_IGNORE_INVISIBLE	(0x00040U)
 
 /* Highest memory right under the sp */
-#define F_HIGHEST_MEM		(1 << 7)
+#define F_HIGHEST_MEM		(0x00080U)
 
 /* No sysmem layout dump if failed */
-#define F_NO_FAIL_DUMP		(1 << 8)
+#define F_NO_FAIL_DUMP		(0x00100U)
 
 /* Warning but not Error */
-#define F_FAIL_WARNING		(1 << 9)
+#define F_FAIL_WARNING		(0x00200U)
 
 #endif /* _MEMBLK_H */

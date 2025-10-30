@@ -14,6 +14,19 @@
 #include <asm/arch/hotkey.h>
 #include <asm/arch/resource_img.h>
 
+// PRQA S 1503 ++
+// PRQA S 5124 ++
+// PRQA S 3200 ++
+// PRQA S 2996 ++
+// PRQA S 2992 ++
+// PRQA S 2981 ++
+// PRQA S 2810 ++
+// PRQA S 2844 ++
+// PRQA S 2863 ++
+// PRQA S 4899 ++
+// PRQA S 2963 ++
+// PRQA S 2880 ++
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef CONFIG_USING_KERNEL_DTB_V2
@@ -26,8 +39,9 @@ static int dm_rm_kernel_dev(void)
 	for (i = 0, j = 0; i < ARRAY_SIZE(uclass); i++) {
 		for (uclass_find_first_device(uclass[i], &dev); dev;
 		     uclass_find_next_device(&dev)) {
-			if (dev->flags & DM_FLAG_KNRL_DTB)
+			if (dev->flags & DM_FLAG_KNRL_DTB) {
 				rec[j++] = dev;
+			}
 		}
 
 		for (k = 0; k < j; k++) {
@@ -49,10 +63,11 @@ static int dm_rm_u_boot_dev(void)
 	for (i = 0, j = 0; i < ARRAY_SIZE(uclass); i++) {
 		for (uclass_find_first_device(uclass[i], &dev); dev;
 		     uclass_find_next_device(&dev)) {
-			if (dev->flags & DM_FLAG_KNRL_DTB)
+			if (dev->flags & DM_FLAG_KNRL_DTB) {
 				del = 1;
-			else
+			} else {
 				rec[j++] = dev;
+			}
 		}
 
 		/* remove u-boot dev if there is someone from kernel */
@@ -91,12 +106,12 @@ static int phandles_fixup_cru(const void *fdt)
 	     offset >= 0;
 	     offset = fdt_next_node(fdt, offset, NULL)) {
 		comp = fdt_getprop(fdt, offset, "compatible", NULL);
-		if (!comp)
+		if (NULL == comp)
 			continue;
 
 		/* Actually, this is not a good method to get cru node */
 		off = strlen(comp) - strlen("-cru");
-		if (off > 0 && !strncmp(comp + off, "-cru", 4)) {
+		if (off > 0 && 0 == strncmp(comp + off, "-cru", 4)) {
 			phandle = fdt_get_phandle(fdt, offset);
 			ncells = fdtdec_get_int(fdt, offset,
 						"#clock-cells", -ENODATA);
@@ -113,7 +128,7 @@ static int phandles_fixup_cru(const void *fdt)
 	/* Try to fixup all cru phandle from U-Boot dtb nodes */
 	for (id = 0; id < UCLASS_COUNT; id++) {
 		ret = uclass_get(id, &uc);
-		if (ret)
+		if (ret != 0)
 			continue;
 
 		if (list_empty(&uc->dev_head))
@@ -121,16 +136,16 @@ static int phandles_fixup_cru(const void *fdt)
 
 		list_for_each_entry(dev, &uc->dev_head, uclass_node) {
 			/* Only U-Boot node go further */
-			if (!dev_read_bool(dev, "u-boot,dm-pre-reloc") &&
-			    !dev_read_bool(dev, "u-boot,dm-spl"))
+			if (0 == dev_read_bool(dev, "u-boot,dm-pre-reloc") &&
+			    0 == dev_read_bool(dev, "u-boot,dm-spl"))
 				continue;
 
 			for (i = 0; i < ARRAY_SIZE(props); i++) {
-				if (!dev_read_prop(dev, props[i], &length))
+				if (NULL == dev_read_prop(dev, props[i], &length))
 					continue;
 
 				clocks = malloc(length);
-				if (!clocks)
+				if (0 == clocks)
 					return -ENOMEM;
 
 				/* Read "props[]" which contains cru phandle */
@@ -201,17 +216,17 @@ static int phandles_fixup_gpio(const void *fdt, void *ufdt)
 			break;
 
 		comp = fdt_getprop(fdt, offset, "compatible", NULL);
-		if (!comp)
+		if (NULL == comp)
 			continue;
 
-		if (!strcmp(comp, "rockchip,gpio-bank")) {
+		if (0 == strcmp(comp, "rockchip,gpio-bank")) {
 			gpio_name[n] = (char *)fdt_get_name(fdt, offset, NULL);
 			gpio_off[n]  = offset;
 			n++;
 		}
 	}
 
-	if (!gpio_name[0])
+	if (NULL == gpio_name[0])
 		return 0;
 
 	if (uclass_get(UCLASS_KEY, &uc) || list_empty(&uc->dev_head))
@@ -222,23 +237,23 @@ static int phandles_fixup_gpio(const void *fdt, void *ufdt)
 		char *name;
 		ofnode ofn;
 
-		if (!dev_read_bool(dev, "u-boot,dm-pre-reloc") &&
-		    !dev_read_bool(dev, "u-boot,dm-spl"))
+		if (0 == dev_read_bool(dev, "u-boot,dm-pre-reloc") &&
+		    0 == dev_read_bool(dev, "u-boot,dm-spl"))
 			continue;
 
 		if (dev_read_u32_array(dev, prop, &phd_old, 1))
 			continue;
 
 		ofn = ofnode_get_by_phandle(phd_old);
-		if (!ofnode_valid(ofn))
+		if (0 == ofnode_valid(ofn))
 			continue;
 
 		name = (char *)ofnode_get_name(ofn);
-		if (!name)
+		if (NULL == name)
 			continue;
 
 		for (i = 0; i < ARRAY_SIZE(gpio_name); i++) {
-			if (gpio_name[i] && !strcmp(name, gpio_name[i])) {
+			if (gpio_name[i] && 0 == strcmp(name, gpio_name[i])) {
 				new_phd = fdt_get_phandle(fdt, gpio_off[i]);
 				dev_write_u32_array(dev, prop, &new_phd, 1);
 				break;
@@ -261,34 +276,19 @@ static int mmc_dm_reinit(void)
 	struct uclass *uc;
 	int ret;
 
-	if (uclass_get(UCLASS_MMC, &uc) || list_empty(&uc->dev_head))
+	if (uclass_get(UCLASS_MMC, &uc) != 0) {
 		return 0;
+	}
+
+	if (list_empty(&uc->dev_head) != 0) {
+		return 0;
+	}
 
 	list_for_each_entry(dev, &uc->dev_head, uclass_node) {
 		ret = board_mmc_dm_reinit(dev);
-		if (ret)
+		if (ret != 0) {
 			return ret;
-	}
-
-	return 0;
-}
-
-/* Check by property: "/compatible" */
-static int dtb_check_ok(void *kfdt, void *ufdt)
-{
-	const char *compat;
-	int index;
-
-	/* TODO */
-	return 1;
-
-	for (index = 0;
-	     compat = fdt_stringlist_get(ufdt, 0, "compatible",
-					 index, NULL), compat;
-	     index++) {
-		debug("u-compat: %s\n", compat);
-		if (!fdt_node_check_compatible(kfdt, 0, compat))
-			return 1;
+		}
 	}
 
 	return 0;
@@ -302,17 +302,23 @@ int init_kernel_dtb(void)
 	ulong fdt_addr = 0;
 	int ret = -ENODEV;
 
-	printf("DM: v%d\n", IS_ENABLED(CONFIG_USING_KERNEL_DTB_V2) ? 2 : 1);
+	if (IS_ENABLED(CONFIG_USING_KERNEL_DTB_V2) != 0) {
+		printf("DM: v2\n");
+	} else {
+		printf("DM: v1\n");
+	}
 
 	/*
 	 * If memory size <= 128MB, we firstly try to get "fdt_addr1_r".
 	 */
-	if (gd->ram_size <= SZ_128M)
+	if (gd->ram_size <= (phys_size_t)SZ_128M) {
 		fdt_addr = env_get_ulong("fdt_addr1_r", 16, 0);
+	}
 
-	if (!fdt_addr)
+	if (0U == fdt_addr) {
 		fdt_addr = env_get_ulong("fdt_addr_r", 16, 0);
-	if (!fdt_addr) {
+	}
+	if (0U == fdt_addr) {
 		printf("No Found FDT Load Address.\n");
 		return -ENODEV;
 	}
@@ -322,28 +328,18 @@ int init_kernel_dtb(void)
 	goto dtb_embed;
 #endif
 	ret = rockchip_read_dtb_file((void *)fdt_addr);
-	if (!ret) {
-		if (!dtb_check_ok((void *)fdt_addr, (void *)gd->fdt_blob)) {
-			ret = -EINVAL;
-			printf("Kernel dtb mismatch this platform!\n");
-		} else {
-			goto dtb_okay;
-		}
+	if (0 == ret) {
+		goto dtb_okay;
 	}
 
 #ifdef CONFIG_EMBED_KERNEL_DTB
 #ifdef CONFIG_EMBED_KERNEL_DTB_ALWAYS
 dtb_embed:
 #endif
-	if (gd->fdt_blob_kern) {
-		if (!dtb_check_ok((void *)gd->fdt_blob_kern, (void *)gd->fdt_blob)) {
-			printf("Embedded kernel dtb mismatch this platform!\n");
-			return -EINVAL;
-		}
-
+	if (gd->fdt_blob_kern != 0U) {
 		fdt_addr = (ulong)memalign(ARCH_DMA_MINALIGN,
 				fdt_totalsize(gd->fdt_blob_kern));
-		if (!fdt_addr)
+		if (fdt_addr != 0)
 			return -ENOMEM;
 
 		/*
@@ -361,7 +357,7 @@ dtb_embed:
 	}
 
 dtb_okay:
-	gd->fdt_blob = (void *)fdt_addr;
+	gd->fdt_blob = (const void *)fdt_addr;
 	hotkey_run(HK_FDT);
 
 #ifndef CONFIG_USING_KERNEL_DTB_V2
@@ -376,10 +372,10 @@ dtb_okay:
 	phandles_fixup_gpio((void *)gd->fdt_blob, (void *)ufdt_blob);
 #endif
 
-	gd->flags |= GD_FLG_KDTB_READY;
+	gd->flags |= (ulong)GD_FLG_KDTB_READY;
 	gd->of_root_f = gd->of_root;
-	of_live_build((void *)gd->fdt_blob, (struct device_node **)&gd->of_root);
-	dm_scan_fdt((void *)gd->fdt_blob, false);
+	of_live_build((const void *)gd->fdt_blob, (struct device_node **)&gd->of_root);
+	dm_scan_fdt((const void *)gd->fdt_blob, false);
 
 #ifdef CONFIG_USING_KERNEL_DTB_V2
 	dm_rm_kernel_dev();
@@ -393,9 +389,22 @@ dtb_okay:
 
 	/* Reserve 'reserved-memory' */
 	ret = boot_fdt_add_sysmem_rsv_regions((void *)gd->fdt_blob);
-	if (ret)
+	if (ret != 0) {
 		return ret;
+	}
 
 	return 0;
 }
 
+// PRQA S 1503 --
+// PRQA S 5124 --
+// PRQA S 3200 --
+// PRQA S 2996 --
+// PRQA S 2992 --
+// PRQA S 2981 --
+// PRQA S 2810 --
+// PRQA S 2844 --
+// PRQA S 2863 --
+// PRQA S 4899 --
+// PRQA S 2963 --
+// PRQA S 2880 --

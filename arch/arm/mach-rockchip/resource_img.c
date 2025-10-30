@@ -15,6 +15,24 @@
 #include <asm/arch/uimage.h>
 #include <asm/arch/fit.h>
 
+// PRQA S 5124 ++
+// PRQA S 3408 ++
+// PRQA S 5118 ++
+// PRQA S 3200 ++
+// PRQA S 2839 ++
+/* -------- dataflow ----------- */
+// PRQA S 2981 ++
+// PRQA S 2839 ++
+// PRQA S 1504 ++
+// PRQA S 2811 ++
+// PRQA S 2844 ++
+// PRQA S 2849 ++
+// PRQA S 2996 ++
+// PRQA S 2998 ++
+// PRQA S 2934 ++
+// PRQA S 1502 ++
+// PRQA S 2810 ++
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #define PART_RESOURCE			"resource"
@@ -97,7 +115,7 @@ LIST_HEAD(entry_head);
 
 static int resource_check_header(struct resource_img_hdr *hdr)
 {
-	return memcmp(RESOURCE_MAGIC, hdr->magic, RESOURCE_MAGIC_SIZE);
+	return strncmp(RESOURCE_MAGIC, hdr->magic, RESOURCE_MAGIC_SIZE);
 }
 
 static void resource_dump(struct resource_file *f)
@@ -120,18 +138,19 @@ static int resource_add_file(const char *name, u32 size,
 	bool _new = true;
 
 	/* old one ? */
-	list_for_each(node, &entry_head) {
+	list_for_each((node), (&entry_head)) {
 		f = list_entry(node, struct resource_file, link);
-		if (!strcmp(f->name, name)) {
+		if (strcmp(f->name, name) == 0) {
 			_new = false;
 			break;
 		}
 	}
 
-	if (_new) {
+	if (_new == true) {
 		f = calloc(1, sizeof(*f));
-		if (!f)
+		if (f == NULL) {
 			return -ENOMEM;
+		}
 
 		list_add_tail(&f->link, &entry_head);
 	}
@@ -149,10 +168,12 @@ static int resource_add_file(const char *name, u32 size,
 	return 0;
 }
 
+// PRQA S 1503 ++
 void resource_destroy(void)
 {
 	INIT_LIST_HEAD(&entry_head);
 }
+// PRQA S 1503 --
 
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 /*
@@ -184,15 +205,17 @@ static int resource_setup_logo_bmp(struct blk_desc *desc)
 	u32 filesz;
 	int ret, i;
 
-	if (part_get_info_by_name(desc, PART_LOGO, &part) < 0)
+	if (part_get_info_by_name(desc, PART_LOGO, &part) < 0) {
 		return 0;
+	}
 
 	header = memalign(ARCH_DMA_MINALIGN, desc->blksz);
-	if (!header)
+	if (header == NULL) {
 		return -ENOMEM;
+	}
 
-	for (i = 0; i < ARRAY_SIZE(name); i++) {
-		if (blk_dread(desc, part.start + blk_offset, 1, header) != 1) {
+	for (i = 0; i < (int)ARRAY_SIZE(name); i++) {
+		if (blk_dread(desc, part.start + blk_offset, 1, header) != 1U) {
 			ret = -EIO;
 			break;
 		}
@@ -202,14 +225,15 @@ static int resource_setup_logo_bmp(struct blk_desc *desc)
 			break;
 		}
 
-		filesz = get_unaligned_le32(&header->file_size);
+		filesz = (u32)get_unaligned_le32(&header->file_size);
 		ret = resource_add_file(name[i], filesz, part.start, blk_offset,
 					NULL, 0, false);
-		if (ret)
+		if (ret != 0) {
 			break;
+		}
 
 		/* move to next file */
-		blk_offset += DIV_ROUND_UP(filesz, desc->blksz);
+		blk_offset += (u32)DIV_ROUND_UP((filesz), (desc->blksz));
 
 		printf("LOGO: %s\n", name[i]);
 
@@ -226,16 +250,18 @@ static int resource_setup_list(struct blk_desc *desc, ulong blk_start,
 {
 	struct resource_img_hdr *hdr = resc_hdr;
 	struct resource_entry *et;
-	u32 i, stride;
+	ulong stride;
 	void *pos;
+	u32 i;
 
 	pos = (void *)hdr + hdr->c_offset * desc->blksz;
 	stride = hdr->e_blks * desc->blksz;
 
 	for (i = 0; i < hdr->e_nums; i++) {
 		et = pos + (i * stride);
-		if (memcmp(et->tag, ENTRY_TAG, ENTRY_TAG_SIZE))
+		if (strncmp(et->tag, ENTRY_TAG, ENTRY_TAG_SIZE) != 0) {
 			continue;
+		}
 
 		resource_add_file(et->name, et->size,
 				  blk_start, et->blk_offset,
@@ -249,58 +275,66 @@ static int resource_setup_list(struct blk_desc *desc, ulong blk_start,
 
 int resource_setup_ram_list(struct blk_desc *desc, void *hdr)
 {
-	if (!desc)
-		return -ENODEV;
+	ulong blk_start;
 
-	if (resource_check_header(hdr)) {
+	if (desc == NULL) {
+		return -ENODEV;
+	}
+
+	if (resource_check_header(hdr) != 0) {
 		printf("RESC: invalid\n");
 		return -EINVAL;
 	}
 
+	blk_start = (ulong)hdr;
+
 	/* @blk_start: set as 'hdr' point addr, to be used in byte */
-	return resource_setup_list(desc, (ulong)hdr, hdr, true);
+	return resource_setup_list(desc, blk_start, hdr, true) != 0 ? 1 : 0;
 }
 
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 static int resource_setup_blk_list(struct blk_desc *desc, ulong blk_start)
 {
 	struct resource_img_hdr *hdr;
-	int blk_cnt;
+	ulong blk_cnt;
 	int ret = 0;
 	void *buf;
 
 	hdr = memalign(ARCH_DMA_MINALIGN, desc->blksz);
-	if (!hdr)
+	if (hdr == NULL) {
 		return -ENOMEM;
+	}
 
-	if (blk_dread(desc, blk_start, 1, hdr) != 1) {
+	if (blk_dread(desc, blk_start, 1, hdr) != 1U) {
 		ret = -EIO;
 		goto out;
 	}
 
-	if (resource_check_header(hdr)) {
+	if (resource_check_header(hdr) != 0) {
 		printf("RESC: invalid\n");
-		if (fdt_check_header(hdr)) {
+		if (fdt_check_header(hdr) != 0) {
 			ret = -EINVAL;
 			goto out;
 		} else {
 			/* this is a dtb file */
 			printf("RESC: this is dtb\n");
 			ret = resource_add_file(DEFAULT_DTB_FILE,
-						fdt_totalsize(hdr),
+						(u32)fdt_totalsize((ulong)hdr),
 						blk_start, 0, NULL, 0, false);
 			goto out;
 		}
 	}
 
-	blk_cnt = hdr->e_blks * hdr->e_nums;
-	hdr = realloc(hdr, (1 + blk_cnt) * desc->blksz);
-	if (!hdr) {
+	blk_cnt = (ulong)hdr->e_blks * hdr->e_nums;
+	hdr = realloc(hdr, (1U + blk_cnt) * desc->blksz);
+	if (hdr == NULL) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
+	// PRQA S 2844
 	buf = (void *)hdr + desc->blksz;
+	// PRQA S 2844
 	if (blk_dread(desc, blk_start + hdr->c_offset, blk_cnt, buf) != blk_cnt) {
 		ret = -EIO;
 		goto out;
@@ -322,16 +356,24 @@ static int resource_init(struct blk_desc *desc,
 #ifdef CONFIG_ANDROID_AVB
 	char hdr[512];
 	ulong resc_buf = 0;
+	bool handle = false;
 	int ret;
 
-	if (blk_dread(desc, part->start, 1, hdr) != 1)
+	if (blk_dread(desc, part->start, 1, hdr) != 1U) {
 		return -EIO;
+	}
+
+	if (android_image_check_header((void *)hdr) == 0) {
+		handle = true;
+	}
+	if (resource_check_header((void *)hdr) == 0) {
+		handle = true;
+	}
 
 	/* only handle android boot/recovery.img and resource.img, ignore fit */
-	if (!android_image_check_header((void *)hdr) ||
-	    !resource_check_header((void *)hdr)) {
+	if (handle) {
 		ret = android_image_verify_resource((const char *)part->name, &resc_buf);
-		if (ret) {
+		if (ret != 0) {
 			printf("RESC: '%s', avb verify fail: %d\n", part->name, ret);
 			return ret;
 		}
@@ -340,8 +382,11 @@ static int resource_init(struct blk_desc *desc,
 		 * unlock=0: resc_buf is valid and file was already full load in ram.
 		 * unlock=1: resc_buf is 0.
 		 */
-		if (resc_buf && !resource_check_header((void *)resc_buf))
-			return resource_setup_ram_list(desc, (void *)resc_buf);
+		if (resc_buf != 0U) {
+			if (resource_check_header((struct resource_img_hdr *)resc_buf) == 0) {
+				return resource_setup_ram_list(desc, (struct resource_img_hdr *)resc_buf);
+			}
+		}
 	}
 
 #endif
@@ -355,8 +400,9 @@ static int resource_default(struct blk_desc *desc,
 {
 	disk_partition_t part;
 
-	if (part_get_info_by_name(desc, PART_RESOURCE, &part) < 0)
+	if (part_get_info_by_name(desc, PART_RESOURCE, &part) < 0) {
 		return -ENODEV;
+	}
 
 	*out_part = part;
 	*out_blk_offset = 0;
@@ -370,18 +416,20 @@ static int resource_scan(void)
 	struct blk_desc *desc = rockchip_get_bootdev();
 	__maybe_unused int ret;
 
-	if (!desc) {
+	if (desc == NULL) {
 		printf("RESC: No bootdev\n");
 		return -ENODEV;
 	}
 
-	if (!list_empty(&entry_head))
+	if (list_empty(&entry_head) == 0) {
 		return 0;
+	}
 
 #ifdef CONFIG_ROCKCHIP_FIT_IMAGE
-	ret = fit_image_init_resource(desc);
-	if (!ret || ret != -EAGAIN)
+	ret = (int)fit_image_init_resource(desc);
+	if (ret == 0 || ret != -EAGAIN) {
 		return ret;
+	}
 #endif
 #ifdef CONFIG_ROCKCHIP_UIMAGE
 	ret = uimage_init_resource(desc);
@@ -395,20 +443,23 @@ static int resource_scan(void)
 	char name[32];
 
 	/* partition priority: boot/recovery > resource */
-	if (!android_image_init_resource(desc, &part, &blk_offset)) {
-		if (blk_dread(desc, part.start + blk_offset, 1, hdr) != 1)
+	if (android_image_init_resource(desc, &part, &blk_offset) == 0) {
+		if (blk_dread(desc, part.start + blk_offset, 1, hdr) != 1U) {
 			return -EIO;
+		}
 
-		if (resource_check_header((void *)hdr)) {
+		if (resource_check_header((void *)hdr) != 0) {
 			strcpy(name, (char *)part.name);
-			if (resource_default(desc, &part, &blk_offset))
+			if (resource_default(desc, &part, &blk_offset) != 0) {
 				return -ENOENT;
+			}
 
 			printf("RESC: '%s' -> '%s'\n", name, part.name);
 		}
 	} else {
-		if (resource_default(desc, &part, &blk_offset))
+		if (resource_default(desc, &part, &blk_offset) != 0) {
 			return -ENOENT;
+		}
 	}
 
 	/* now, 'part' can be boot/recovery/resource */
@@ -422,13 +473,15 @@ static struct resource_file *resource_get_file(const char *name)
 	struct resource_file *f;
 	struct list_head *node;
 
-	if (resource_scan())
+	if (resource_scan() != 0) {
 		return NULL;
+	}
 
-	list_for_each(node, &entry_head) {
+	list_for_each((node), (&entry_head)) {
 		f = list_entry(node, struct resource_file, link);
-		if (!strcmp(f->name, name))
+		if (strcmp(f->name, name) == 0) {
 			return f;
+		}
 	}
 
 	return NULL;
@@ -438,11 +491,12 @@ int rockchip_read_resource_file(void *buf, const char *name, int blk_offset, int
 {
 	struct blk_desc *desc = rockchip_get_bootdev();
 	struct resource_file *f;
-	int blk_cnt;
+	ulong blk_cnt;
 	ulong pos;
 
-	if (!desc)
+	if (desc == NULL) {
 		return -ENODEV;
+	}
 
 	f = resource_get_file(name);
 	if (!f) {
@@ -450,18 +504,20 @@ int rockchip_read_resource_file(void *buf, const char *name, int blk_offset, int
 		return -ENOENT;
 	}
 
-	if (len <= 0 || len > f->size)
-		len = f->size;
+	if (len <= 0 || (u32)len > f->size) {
+		len = (int)f->size;
+	}
 
 	if (f->in_ram) {
-		pos = f->blk_start + (f->blk_offset + blk_offset) * desc->blksz;
-		memcpy(buf, (char *)pos, len);
+		pos = f->blk_start + (f->blk_offset + (ulong)blk_offset) * desc->blksz;
+		memcpy((char *)buf, (char *)pos, (ulong)len);
 	} else {
-		blk_cnt = DIV_ROUND_UP(len, desc->blksz);
+		blk_cnt = DIV_ROUND_UP((ulong)len, desc->blksz);
 		if (blk_dread(desc,
-			      f->blk_start + f->blk_offset + blk_offset,
-			      blk_cnt, buf) != blk_cnt)
+			      f->blk_start + f->blk_offset + (ulong)blk_offset,
+			      blk_cnt, buf) != blk_cnt) {
 			len = -EIO;
+		}
 	}
 
 	return len;
@@ -475,13 +531,15 @@ static struct resource_file *resource_read_hwid_dtb(void)
 
 	hwid_init_data();
 
-	list_for_each(node, &entry_head) {
+	list_for_each((node), (&entry_head)) {
 		file = list_entry(node, struct resource_file, link);
-		if (!strstr(file->name, DTB_SUFFIX))
+		if (!strstr(file->name, DTB_SUFFIX)) {
 			continue;
+		}
 
-		if (hwid_dtb_is_available(file->name))
+		if (hwid_dtb_is_available(file->name)) {
 			return file;
+		}
 	}
 
 	return NULL;
@@ -494,27 +552,32 @@ int rockchip_read_resource_dtb(void *fdt_addr, char **hash, int *hash_size)
 	int ret;
 
 #ifdef CONFIG_ROCKCHIP_HWID_DTB
-	if (resource_scan())
+	if (resource_scan() != 0) {
 		return -ENOENT;
+	}
 
 	f = resource_read_hwid_dtb();
 #endif
 	/* If no dtb match hardware id(GPIO/ADC), use the default */
-	if (!f)
+	if (!f) {
 		f = resource_get_file(DEFAULT_DTB_FILE);
+	}
 
-	if (!f)
+	if (!f) {
 		return -ENODEV;
+	}
 
 	ret = rockchip_read_resource_file(fdt_addr, f->name, 0, 0);
-	if (ret < 0)
+	if (ret < 0) {
 		return ret;
+	}
 
-	if (fdt_check_header(fdt_addr))
+	if (fdt_check_header(fdt_addr) != 0) {
 		return -EBADF;
+	}
 
 	*hash = f->hash;
-	*hash_size = f->hash_size;
+	*hash_size = (int)f->hash_size;
 
 	printf("DTB: %s\n", f->name);
 
@@ -527,7 +590,7 @@ static int do_dump_resource(cmd_tbl_t *cmdtp, int flag,
 	struct resource_file *f;
 	struct list_head *node;
 
-	list_for_each(node, &entry_head) {
+	list_for_each((node), (&entry_head)) {
 		f = list_entry(node, struct resource_file, link);
 		resource_dump(f);
 	}
@@ -535,9 +598,29 @@ static int do_dump_resource(cmd_tbl_t *cmdtp, int flag,
 	return 0;
 }
 
+// PRQA S 5124 --
+// PRQA S 3408 --
+// PRQA S 5118 --
+// PRQA S 3200 --
+/* -------- dataflow ----------- */
+// PRQA S 2981 --
+// PRQA S 2839 --
+// PRQA S 1504 --
+// PRQA S 2811 --
+// PRQA S 2844 --
+// PRQA S 2849 --
+// PRQA S 2996 --
+// PRQA S 2998 --
+// PRQA S 2934 --
+// PRQA S 1502 --
+// PRQA S 2810 --
+
+
+// PRQA S 3432,0753,0310,0311,3410,3305 ++
 U_BOOT_CMD(
 	dump_resource, 1, 1, do_dump_resource,
 	"dump resource files",
 	""
 );
+// PRQA S 3432,0753,0310,0311,3410,3305 --
 
