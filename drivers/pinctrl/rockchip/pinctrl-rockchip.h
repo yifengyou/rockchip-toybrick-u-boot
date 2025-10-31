@@ -283,7 +283,7 @@ struct rockchip_pin_bank {
 	struct rockchip_pinctrl_priv	*priv;
 	u32				pin_base;
 	u8				nr_pins;
-	char				*name;
+	const char				*name;
 	u8				bank_num;
 	struct rockchip_iomux		iomux[4];
 	struct rockchip_drv		drv[4];
@@ -544,7 +544,7 @@ struct rockchip_mux_route_data {
 	u8 bank_num;
 	u8 pin;
 	u8 func;
-	enum rockchip_pin_route_type route_type : 8;
+	enum rockchip_pin_route_type route_type;
 	u32 route_offset;
 	u32 route_val;
 };
