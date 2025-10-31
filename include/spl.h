@@ -11,6 +11,7 @@
 #include <mmc.h>
 #include <linux/compiler.h>
 #include <asm/spl.h>
+#include <asm/arch/bootrom.h>
 
 /* Value in r0 indicates we booted from U-Boot */
 #define UBOOT_NOT_LOADED_FROM_SPL	0x13578642
@@ -351,4 +352,22 @@ const char *spl_kernel_partition(struct spl_image_info *spl,
 int spl_find_hwid_dtb(const char *fdt_name);
 #endif
 
+const char *board_spl_was_booted_from(void);
+void rockchip_stimer_init(void);
+int rk_board_init_f(void);
+int rk_spl_board_init(void);
+void spl_hang_reset(void);
+
+__weak const char * const boot_devices[BROM_LAST_BOOTSOURCE + 1] = {
+};
+
+__weak int rk_board_init_f(void)
+{
+	return 0;
+}
+
+__weak int rk_spl_board_init(void)
+{
+	return 0;
+}
 #endif

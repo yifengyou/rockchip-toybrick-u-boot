@@ -35,27 +35,27 @@ void board_return_to_bootrom(void)
 	back_to_bootrom(BROM_BOOT_NEXTSTAGE);
 }
 
-__weak const char * const boot_devices[BROM_LAST_BOOTSOURCE + 1] = {
-};
-
 const char *board_spl_was_booted_from(void)
 {
 	u32  bootdevice_brom_id = readl(BROM_BOOTSOURCE_ID_ADDR);
 	const char *bootdevice_ofpath = NULL;
 
-	if ((bootdevice_brom_id & BROM_DOWNLOAD_MASK) == BROM_DOWNLOAD_MASK)
+	if ((bootdevice_brom_id & BROM_DOWNLOAD_MASK) == BROM_DOWNLOAD_MASK) {
 		bootdevice_brom_id = BROM_BOOTSOURCE_USB;
+	}
 
 	bootdevice_brom_id = bootdevice_brom_id & BROM_BOOTSOURCE_MASK;
-	if (bootdevice_brom_id < ARRAY_SIZE(boot_devices))
+	if (bootdevice_brom_id < ARRAY_SIZE(boot_devices)) {
 		bootdevice_ofpath = boot_devices[bootdevice_brom_id];
+	}
 
-	if (bootdevice_ofpath)
+	if (bootdevice_ofpath) {
 		debug("%s: brom_bootdevice_id %x maps to '%s'\n",
 		      __func__, bootdevice_brom_id, bootdevice_ofpath);
-	else
+	} else {
 		debug("%s: failed to resolve brom_bootdevice_id %x\n",
 		      __func__, bootdevice_brom_id);
+	}
 
 	return bootdevice_ofpath;
 }
@@ -69,8 +69,9 @@ u32 spl_boot_device(void)
 		defined(CONFIG_TARGET_CHROMEBOOK_MINNIE)
 	return BOOT_DEVICE_SPI;
 #endif
-	if (CONFIG_IS_ENABLED(ROCKCHIP_BACK_TO_BROM))
-		return BOOT_DEVICE_BOOTROM;
+#if CONFIG_IS_ENABLED(ROCKCHIP_BACK_TO_BROM)
+	return BOOT_DEVICE_BOOTROM;
+#endif
 
 	return boot_device;
 }
@@ -78,34 +79,6 @@ u32 spl_boot_device(void)
 u32 spl_boot_mode(const u32 boot_device)
 {
 	return MMCSD_MODE_RAW;
-}
-
-__weak void rockchip_stimer_init(void)
-{
-	/* If Timer already enabled, don't re-init it */
-	u32 reg = readl(CONFIG_ROCKCHIP_STIMER_BASE + 0x10);
-	if ( reg & 0x1 )
-		return;
-#ifdef COUNTER_FREQUENCY
-#ifndef CONFIG_ARM64
-	asm volatile("mcr p15, 0, %0, c14, c0, 0"
-		     : : "r"(COUNTER_FREQUENCY));
-#endif
-#endif
-	writel(0, CONFIG_ROCKCHIP_STIMER_BASE + 0x10);
-	writel(0xffffffff, CONFIG_ROCKCHIP_STIMER_BASE);
-	writel(0xffffffff, CONFIG_ROCKCHIP_STIMER_BASE + 4);
-	writel(1, CONFIG_ROCKCHIP_STIMER_BASE + 0x10);
-}
-
-__weak int arch_cpu_init(void)
-{
-	return 0;
-}
-
-__weak int rk_board_init_f(void)
-{
-	return 0;
 }
 
 #ifndef CONFIG_SPL_LIBGENERIC_SUPPORT
@@ -164,7 +137,9 @@ static void brom_download(void)
 	if (gd->console_evt == 0x02) {
 		printf("ctrl+b: Bootrom download!\n");
 		writel(BOOT_BROM_DOWNLOAD, CONFIG_ROCKCHIP_BOOT_MODE_REG);
-		do_reset(NULL, 0, 0, NULL);
+		if (do_reset(NULL, 0, 0, NULL) != 0x0) {
+			printf("do_reset failed\n");
+		}
 	}
 }
 #endif
@@ -172,22 +147,25 @@ static void brom_download(void)
 static void spl_hotkey_init(void)
 {
 	/* If disable console, skip getting uart reg */
-	if (!gd || gd->flags & GD_FLG_DISABLE_CONSOLE)
+	if ((gd == NULL) || ((gd->flags & GD_FLG_DISABLE_CONSOLE) == 0x1u)) {
 		return;
-	if (!gd->have_console)
+	}
+	if (gd->have_console == 0x0u) {
 		return;
+	}
 
 	/* serial uclass only exists when enable CONFIG_SPL_FRAMEWORK */
 #ifdef CONFIG_SPL_FRAMEWORK
-	if (serial_tstc()) {
+	if (serial_tstc() == 0x1) {
 		gd->console_evt = serial_getc();
 #else
 	if (debug_uart_tstc()) {
 		gd->console_evt = debug_uart_getc();
 #endif
-		if (gd->console_evt <= 0x1a) /* 'z' */
+		if (gd->console_evt <= 0x1a) /* 'z' */ {
 			printf("SPL Hotkey: ctrl+%c\n",
 				gd->console_evt + 'a' - 1);
+		}
 	}
 
 	return;
@@ -213,9 +191,10 @@ void board_init_f(ulong dummy)
 	 * printhex8(0x1234);
 	 * printascii("string");
 	 */
-	if (!gd->serial.using_pre_serial &&
-	    !(gd->flags & GD_FLG_DISABLE_CONSOLE))
+	if ((gd->serial.using_pre_serial == 0x0u) &&
+	    !((gd->flags & GD_FLG_DISABLE_CONSOLE) == 0x1u)) {
 		debug_uart_init();
+	}
 	printascii("U-Boot SPL board init");
 #endif
 	gd->sys_start_tick = get_ticks();
@@ -224,14 +203,14 @@ void board_init_f(ulong dummy)
 #endif
 #ifdef CONFIG_SPL_FRAMEWORK
 	ret = spl_early_init();
-	if (ret) {
+	if (ret != 0) {
 		printf("spl_early_init() failed: %d\n", ret);
 		hang();
 	}
 #if !defined(CONFIG_SUPPORT_TPL)
 	debug("\nspl:init dram\n");
 	ret = uclass_get_device(UCLASS_RAM, 0, &dev);
-	if (ret) {
+	if (ret != 0) {
 		printf("DRAM init failed: %d\n", ret);
 		return;
 	}
@@ -246,8 +225,12 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_DM_RESET
 	brom_download();
 #endif
-	arch_cpu_init();
-	rk_board_init_f();
+	if (arch_cpu_init() != 0x0) {
+		printf("arch_cpu_init failed\n");
+	}
+	if (rk_board_init_f() != 0x0) {
+		printf("rk_board_init_f failed\n");
+	}
 #if defined(CONFIG_SPL_RAM_DEVICE) && defined(CONFIG_SPL_PCIE_EP_SUPPORT)
 	rockchip_pcie_ep_get_firmware();
 #endif
@@ -289,15 +272,16 @@ int board_init_f_boot_flags(void)
 	struct tag *t;
 
 	t = atags_get_tag(ATAG_SERIAL);
-	if (t) {
+	if (t != NULL) {
 		gd->serial.using_pre_serial = 1;
 		gd->serial.enable = t->u.serial.enable;
 		gd->serial.baudrate = t->u.serial.baudrate;
 		gd->serial.addr = t->u.serial.addr;
 		gd->serial.id = t->u.serial.id;
 		gd->baudrate = t->u.serial.baudrate;
-		if (!t->u.serial.enable)
+		if (t->u.serial.enable == 0x0u) {
 			boot_flags |= GD_FLG_DISABLE_CONSOLE;
+		}
 		debug("preloader: enable=%d, addr=0x%x, baudrate=%d, id=%d\n",
 		      t->u.serial.enable, (u32)t->u.serial.addr,
 		      t->u.serial.baudrate, t->u.serial.id);
@@ -318,11 +302,6 @@ int board_init_f_boot_flags(void)
 }
 
 #ifdef CONFIG_SPL_BOARD_INIT
-__weak int rk_spl_board_init(void)
-{
-	return 0;
-}
-
 static int setup_led(void)
 {
 #ifdef CONFIG_SPL_LED
@@ -331,16 +310,18 @@ static int setup_led(void)
 	int ret;
 
 	led_name = fdtdec_get_config_string(gd->fdt_blob, "u-boot,boot-led");
-	if (!led_name)
+	if (led_name == NULL) {
 		return 0;
+	}
 	ret = led_get_by_label(led_name, &dev);
-	if (ret) {
+	if (ret != 0) {
 		debug("%s: get=%d\n", __func__, ret);
 		return ret;
 	}
 	ret = led_set_state(dev, LEDST_ON);
-	if (ret)
+	if (ret != 0) {
 		return ret;
+	}
 #endif
 
 	return 0;
@@ -352,7 +333,7 @@ void spl_board_init(void)
 
 	ret = setup_led();
 
-	if (ret) {
+	if (ret != 0) {
 		debug("LED ret=%d\n", ret);
 		hang();
 	}
@@ -382,14 +363,15 @@ bool spl_is_low_power(void)
 	int ret, voltage;
 
 	ret = uclass_get_device(UCLASS_FG, 0, &dev);
-	if (ret) {
+	if (ret != 0) {
 		debug("Get charge display failed, ret=%d\n", ret);
 		return false;
 	}
 
 	voltage = fuel_gauge_get_voltage(dev);
-	if (voltage >= CONFIG_SPL_POWER_LOW_VOLTAGE_THRESHOLD)
+	if (voltage >= CONFIG_SPL_POWER_LOW_VOLTAGE_THRESHOLD) {
 		return false;
+	}
 
 	return true;
 }
@@ -436,8 +418,9 @@ void spl_next_stage(struct spl_image_info *spl)
 	}
 
 out:
-	if (spl->next_stage == SPL_NEXT_STAGE_UBOOT)
+	if (spl->next_stage == SPL_NEXT_STAGE_UBOOT) {
 		printf("Enter uboot reason: %s\n", reason[i]);
+	}
 
 	return;
 }
@@ -454,8 +437,9 @@ const char *spl_kernel_partition(struct spl_image_info *spl,
 	disk_partition_t part_info;
 
 	ret = part_get_info_by_name(info->dev, PART_MISC, &part_info);
-	if (ret >= 0)
+	if (ret >= 0) {
 		sector = part_info.start;
+	}
 #else
 	sector = CONFIG_SPL_MISC_SECTOR;
 #endif
@@ -498,8 +482,9 @@ static void spl_fdt_fixup_memory(struct spl_image_info *spl_image)
 		for (i = 0; i < count; i++) {
 			start[i] = t->u.ddr_mem.bank[i];
 			size[i] = t->u.ddr_mem.bank[i + count];
-			if (size[i] == 0)
+			if (size[i] == 0) {
 				continue;
+			}
 			debug("Adding bank: 0x%08llx - 0x%08llx (size: 0x%08llx)\n",
 			       start[i], start[i] + size[i], size[i]);
 		}
@@ -535,8 +520,9 @@ void spl_perform_fixups(struct spl_image_info *spl_image)
   #endif
 #endif
 #if defined(CONFIG_SPL_KERNEL_BOOT)
-	if (spl_image->next_stage == SPL_NEXT_STAGE_KERNEL)
+	if (spl_image->next_stage == SPL_NEXT_STAGE_KERNEL) {
 		spl_fdt_fixup_memory(spl_image);
+	}
 #endif
 	return;
 }
@@ -546,9 +532,11 @@ void spl_hang_reset(void)
 	printf("# Reset the board to bootrom #\n");
 #if defined(CONFIG_SPL_SYSRESET) && defined(CONFIG_SPL_DRIVERS_MISC_SUPPORT)
 	/* reset is available after dm setup */
-	if (gd->flags & GD_FLG_SPL_EARLY_INIT) {
+	if ((gd->flags & GD_FLG_SPL_EARLY_INIT) == 0x1u) {
 		writel(BOOT_BROM_DOWNLOAD, CONFIG_ROCKCHIP_BOOT_MODE_REG);
-		do_reset(NULL, 0, 0, NULL);
+		if (do_reset(NULL, 0, 0, NULL) != 0x0) {
+			printf("do_reset failed\n");
+		}
 	}
 #endif
 }
@@ -565,8 +553,9 @@ int fit_read_otp_rollback_index(uint32_t fit_index, uint32_t *otp_index)
 	u32 bit_count;
 
 	dev = misc_otp_get_device(OTP_S);
-	if (!dev)
+	if (!dev) {
 		return -ENODEV;
+	}
 
 	otp_version = 0;
 	for (i = 0; i < OTP_UBOOT_ROLLBACK_WORDS; i++) {
@@ -592,18 +581,22 @@ static int fit_write_otp_rollback_index(u32 fit_index)
 	struct udevice *dev;
 	u32 index, i, otp_index;
 
-	if (!fit_index)
+	if (!fit_index) {
 		return 0;
+	}
 
-	if (fit_index > OTP_UBOOT_ROLLBACK_WORDS * 32)
+	if (fit_index > OTP_UBOOT_ROLLBACK_WORDS * 32) {
 		return -EINVAL;
+	}
 
 	dev = misc_otp_get_device(OTP_S);
-	if (!dev)
+	if (!dev) {
 		return -ENODEV;
+	}
 
-	if (fit_read_otp_rollback_index(fit_index, &otp_index))
+	if (fit_read_otp_rollback_index(fit_index, &otp_index)) {
 		return -EIO;
+	}
 
 	if (otp_index < fit_index) {
 		/* Write new SW version to otp */
@@ -613,8 +606,9 @@ static int fit_write_otp_rollback_index(u32 fit_index)
 			 * But the operand can only be 0 - 31. The "0xffffffff >> 32" is
 			 * actually be "0xffffffff >> 0".
 			 */
-			if (!fit_index)
+			if (!fit_index) {
 				break;
+			}
 			/* convert to base-1 representation */
 			index = 0xffffffff >> (OTP_ALL_ONES_NUM_BITS -
 				min(fit_index, (u32)OTP_ALL_ONES_NUM_BITS));
@@ -642,7 +636,7 @@ int spl_board_prepare_for_jump(struct spl_image_info *spl_image)
 	int ret;
 
 	ret = fit_write_otp_rollback_index(gd->rollback_index);
-	if (ret) {
+	if (ret != 0) {
 		panic("Failed to write fit rollback index %d, ret=%d",
 		      gd->rollback_index, ret);
 	}
