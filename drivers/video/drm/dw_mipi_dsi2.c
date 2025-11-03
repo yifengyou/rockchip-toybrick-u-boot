@@ -29,10 +29,16 @@
 #include "rockchip_panel.h"
 #include "rockchip_phy.h"
 
-#define UPDATE(v, h, l)		(((v) << (l)) & GENMASK((h), (l)))
+// PRQA S 3101 ++
+// PRQA S 5118 ++
+// PRQA S 5124 ++
+// PRQA S 5125 ++
+// PRQA S 5129 ++
+
+#define UPDATE(v, h, l)		(((unsigned long)(v) << (unsigned long)(l)) & GENMASK((unsigned long)(h), (unsigned long)(l)))
 
 #define DSI2_PWR_UP			0x000c
-#define RESET				0
+#define RESET				0UL
 #define POWER_UP			BIT(0)
 #define CMD_TX_MODE(x)			UPDATE(x,  24,  24)
 #define DSI2_SOFT_RESET			0x0010
@@ -72,13 +78,13 @@
 
 #define DSI2_PHY_MODE_CFG		0x0100
 #define PPI_WIDTH(x)			UPDATE(x, 9, 8)
-#define PHY_LANES(x)			UPDATE(x - 1, 5, 4)
+#define PHY_LANES(x)			UPDATE(x - 1UL, 5, 4)
 #define PHY_TYPE(x)			UPDATE(x, 0, 0)
 #define DSI2_PHY_CLK_CFG		0X0104
 #define PHY_LPTX_CLK_DIV(x)		UPDATE(x, 12, 8)
 #define CLK_TYPE_MASK			BIT(0)
 #define NON_CONTINUOUS_CLK		BIT(0)
-#define CONTIUOUS_CLK			0
+#define CONTIUOUS_CLK			0UL
 #define DSI2_PHY_LP2HS_MAN_CFG		0x010c
 #define PHY_LP2HS_TIME(x)		UPDATE(x, 28, 0)
 #define DSI2_PHY_HS2LP_MAN_CFG		0x0114
@@ -120,13 +126,13 @@
 
 #define DSI2_IPI_COLOR_MAN_CFG		0x0300
 #define IPI_DEPTH(x)			UPDATE(x, 7, 4)
-#define IPI_DEPTH_5_6_5_BITS		0x02
-#define IPI_DEPTH_6_BITS		0x03
-#define IPI_DEPTH_8_BITS		0x05
-#define IPI_DEPTH_10_BITS		0x06
-#define IPI_FORMAT(x)			UPDATE(x, 3, 0)
-#define IPI_FORMAT_RGB			0x0
-#define IPI_FORMAT_DSC			0x0b
+#define IPI_DEPTH_5_6_5_BITS		0x02UL
+#define IPI_DEPTH_6_BITS		0x03UL
+#define IPI_DEPTH_8_BITS		0x05UL
+#define IPI_DEPTH_10_BITS		0x06UL
+#define IPI_PIXEL_FORMAT(x)			UPDATE(x, 3, 0)
+#define IPI_FORMAT_RGB			0x0UL
+#define IPI_FORMAT_DSC			0x0bUL
 #define DSI2_IPI_VID_HSA_MAN_CFG	0x0304
 #define VID_HSA_TIME(x)			UPDATE(x, 29, 0)
 #define DSI2_IPI_VID_HBP_MAN_CFG	0x030c
@@ -163,13 +169,13 @@
 #define DSI2_INT_FORCE_CRI		0x0468
 #define DSI2_MAX_REGISGER		DSI2_INT_FORCE_CRI
 
-#define CMD_PKT_STATUS_TIMEOUT_US	1000
-#define MODE_STATUS_TIMEOUT_US		20000
-#define PSEC_PER_SEC			1000000000000LL
-#define USEC_PER_SEC			1000000L
-#define MSEC_PER_SEC			1000L
+#define CMD_PKT_STATUS_TIMEOUT_US	1000UL
+#define MODE_STATUS_TIMEOUT_US		20000UL
+#define PSEC_PER_SEC			1000000000000ULL
+#define USEC_PER_SEC			1000000UL
+#define MSEC_PER_SEC			1000UL
 
-#define GRF_REG_FIELD(reg, lsb, msb)	(((reg) << 16) | ((lsb) << 8) | (msb))
+#define GRF_REG_FIELD(reg, lsb, msb)	(u32)(((unsigned long)(reg) << 16UL) | ((unsigned long)(lsb) << 8UL) | (unsigned long)(msb))
 
 enum vid_mode_type {
 	VID_MODE_TYPE_NON_BURST_SYNC_PULSES,
@@ -269,7 +275,7 @@ struct dw_mipi_dsi2 {
 	struct udevice *dev;
 	void *base;
 	void *grf;
-	int id;
+	unsigned int id;
 	struct dw_mipi_dsi2 *master;
 	struct dw_mipi_dsi2 *slave;
 	bool prepared;
@@ -279,16 +285,16 @@ struct dw_mipi_dsi2 {
 	bool c_option;
 	bool dsc_enable;
 	bool scrambling_en;
-	unsigned int slice_width;
-	unsigned int slice_height;
-	u32 version_major;
-	u32 version_minor;
+	int slice_width;
+	int slice_height;
+	int version_major;
+	int version_minor;
 	struct clk sys_clk;
 
 	unsigned int lane_hs_rate; /* Kbps/Ksps per lane */
 	u32 channel;
 	u32 lanes;
-	u32 format;
+	enum mipi_dsi_pixel_format format;
 	u32 mode_flags;
 	u64 mipi_pixel_rate;
 	struct mipi_dcphy dcphy;
@@ -303,20 +309,20 @@ struct dw_mipi_dsi2 {
 	struct drm_dsc_picture_parameter_set *pps;
 };
 
-static inline void dsi_write(struct dw_mipi_dsi2 *dsi2, u32 reg, u32 val)
+static inline void dsi_write(struct dw_mipi_dsi2 *dsi2, unsigned long reg, unsigned long val)
 {
-	writel(val, dsi2->base + reg);
+	(void)writel(((u32)val), (dsi2->base + (u32)reg));
 }
 
-static inline u32 dsi_read(struct dw_mipi_dsi2 *dsi2, u32 reg)
+static inline unsigned long dsi_read(struct dw_mipi_dsi2 *dsi2, unsigned long reg)
 {
-	return readl(dsi2->base + reg);
+	return readl(dsi2->base + (u32)reg);
 }
 
 static inline void dsi_update_bits(struct dw_mipi_dsi2 *dsi2,
-				   u32 reg, u32 mask, u32 val)
+				   unsigned long reg, unsigned long mask, unsigned long val)
 {
-	u32 orig, tmp;
+	unsigned long orig, tmp;
 
 	orig = dsi_read(dsi2, reg);
 	tmp = orig & ~mask;
@@ -325,29 +331,31 @@ static inline void dsi_update_bits(struct dw_mipi_dsi2 *dsi2,
 }
 
 static void grf_field_write(struct dw_mipi_dsi2 *dsi2, enum grf_reg_fields index,
-			    unsigned int val)
+			    unsigned long val)
 {
-	const u32 field = dsi2->id ? dsi2->pdata->dsi1_grf_reg_fields[index] :
-			  dsi2->pdata->dsi0_grf_reg_fields[index];
-	u16 reg;
-	u8 msb, lsb;
+	const unsigned long field = (dsi2->id == 1UL) ? dsi2->pdata->dsi1_grf_reg_fields[index] :
+				    dsi2->pdata->dsi0_grf_reg_fields[index];
+	unsigned long reg;
+	unsigned long  msb, lsb;
 
-	if (!field)
+	if (field == 0UL) {
 		return;
+	}
 
-	reg = (field >> 16) & 0xffff;
-	lsb = (field >>  8) & 0xff;
-	msb = (field >>  0) & 0xff;
+	reg = (field >> 16UL) & 0xffffUL;
+	lsb = (field >>  8UL) & 0xffUL;
+	msb = (field >>  0UL) & 0xffUL;
 
-	regmap_write(dsi2->grf, reg, GENMASK(msb, lsb) << 16 | val << lsb);
+	(void)regmap_write(dsi2->grf, (uint)reg, (uint)(GENMASK(msb, lsb) << 16UL | val << lsb));
 }
 
 static unsigned long dw_mipi_dsi2_get_lane_rate(struct dw_mipi_dsi2 *dsi2)
 {
 	const struct drm_display_mode *mode = &dsi2->mode;
 	u64 max_lane_rate, lane_rate;
-	unsigned int value;
-	int bpp, lanes;
+	unsigned long value;
+	int bpp;
+	unsigned long lanes;
 	u64 tmp;
 
 	max_lane_rate = (dsi2->c_option) ?
@@ -358,44 +366,50 @@ static unsigned long dw_mipi_dsi2_get_lane_rate(struct dw_mipi_dsi2 *dsi2)
 	 * optional override of the desired bandwidth
 	 * High-Speed mode: Differential and terminated: 80Mbps ~ 4500 Mbps
 	 */
-	value = dev_read_u32_default(dsi2->dev, "rockchip,lane-rate", 0);
-	if (value >= 80000 && value <= 4500000)
+	value = (unsigned long)dev_read_u32_default(dsi2->dev, "rockchip,lane-rate", 0);
+	if (value >= 80000UL && value <= 4500000UL) {
 		return value * MSEC_PER_SEC;
-	else if (value >= 80 && value <= 4500)
+	} else if (value >= 80UL && value <= 4500UL) {
 		return value * USEC_PER_SEC;
+	} else {
+		(void)printf("specify lane hs rate by driver calculate\n");
+	}
 
 	bpp = mipi_dsi_pixel_format_to_bpp(dsi2->format);
-	if (bpp < 0)
+	if (bpp < 0) {
 		bpp = 24;
+	}
 
-	lanes = dsi2->slave ? dsi2->lanes * 2 : dsi2->lanes;
-	tmp = (u64)mode->crtc_clock * 1000 * bpp;
-	do_div(tmp, lanes);
+	lanes = dsi2->slave ? dsi2->lanes * 2UL : dsi2->lanes;
+	tmp = (u64)mode->crtc_clock * 1000UL * (unsigned long)bpp;
+	(void)do_div(tmp, (uint32_t)lanes);
 
-	if (dsi2->c_option)
-		tmp = DIV_ROUND_CLOSEST(tmp * 100, 228);
+	if (dsi2->c_option) {
+		tmp = (unsigned long long)DIV_ROUND_CLOSEST((tmp * 100UL), (228UL));
+	}
 
 	/* set BW a little larger only in video burst mode in
 	 * consideration of the protocol overhead and HS mode
 	 * switching to BLLP mode, take 1 / 0.9, since Mbps must
 	 * big than bandwidth of RGB
 	 */
-	if (dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_BURST) {
-		tmp *= 10;
-		do_div(tmp, 9);
+	if ((dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_BURST) == MIPI_DSI_MODE_VIDEO_BURST) {
+		tmp *= 10UL;
+		tmp /= 9UL;
 	}
 
-	if (tmp > max_lane_rate)
+	if (tmp > max_lane_rate) {
 		lane_rate = max_lane_rate;
-	else
+	} else {
 		lane_rate = tmp;
+	}
 
 	return lane_rate;
 }
 
 static int cri_fifos_wait_avail(struct dw_mipi_dsi2 *dsi2)
 {
-	u32 sts, mask;
+	unsigned long sts, mask;
 	int ret;
 
 	mask = CRI_BUSY | CRT_FIFOS_NOT_EMPTY;
@@ -403,7 +417,7 @@ static int cri_fifos_wait_avail(struct dw_mipi_dsi2 *dsi2)
 				 sts, !(sts & mask),
 				 CMD_PKT_STATUS_TIMEOUT_US);
 	if (ret < 0) {
-		printf("command interface is busy: 0x%x\n", sts);
+		(void)printf("command interface is busy: 0x%lx\n", sts);
 		return ret;
 	}
 
@@ -414,36 +428,40 @@ static int dw_mipi_dsi2_read_from_fifo(struct dw_mipi_dsi2 *dsi2,
 				      const struct mipi_dsi_msg *msg)
 {
 	u8 *payload = msg->rx_buf;
-	u8 data_type;
-	u16 wc;
-	int i, j, ret, len = msg->rx_len;
-	unsigned int vrefresh = drm_mode_vrefresh(&dsi2->mode);
-	u32 val;
+	unsigned long data_type;
+	unsigned long wc;
+	unsigned long i, j;
+        int ret;
+	unsigned long len = msg->rx_len;
+	unsigned long vrefresh = (unsigned long)drm_mode_vrefresh(&dsi2->mode);
+	unsigned long val;
 
 	ret = readl_poll_timeout(dsi2->base + DSI2_CORE_STATUS,
-				 val, val & CRI_RD_DATA_AVAIL,
-				 DIV_ROUND_UP(1000000, vrefresh));
-	if (ret) {
-		printf("CRI has no available read data\n");
+				 val, ((val & CRI_RD_DATA_AVAIL) == CRI_RD_DATA_AVAIL),
+				 DIV_ROUND_UP(1000000UL, vrefresh));
+	if (ret < 0) {
+		(void)printf("CRI has no available read data\n");
 		return ret;
 	}
 
 	val = dsi_read(dsi2, DSI2_CRI_RX_HDR);
-	data_type = val & 0x3f;
+	data_type = val & 0x3fUL;
 
-	if (mipi_dsi_packet_format_is_short(data_type)) {
-		for (i = 0; i < len && i < 2; i++)
-			payload[i] = (val >> (8 * (i + 1))) & 0xff;
+	if (mipi_dsi_packet_format_is_short((u8)data_type)) {
+		for (i = 0UL; i < len && i < 2UL; i++) {
+			payload[i] = (u8)((val >> (8UL * (i + 1UL))) & 0xffUL);
+		}
 
 		return 0;
 	}
 
-	wc = (val >> 8) & 0xffff;
+	wc = (val >> 8UL) & 0xffffUL;
 	/* Receive payload */
-	for (i = 0; i < len && i < wc; i += 4) {
+	for (i = 0UL; i < len && i < wc; i += 4UL) {
 		val = dsi_read(dsi2, DSI2_CRI_RX_PLD);
-		for (j = 0; j < 4 && j + i < len && j + i < wc; j++)
-			payload[i + j] = val >> (8 * j);
+		for (j = 0UL; j < 4UL && j + i < len && j + i < wc; j++) {
+			payload[i + j] = (u8)(val >> (8UL * j));
+		}
 	}
 
 	return 0;
@@ -451,16 +469,17 @@ static int dw_mipi_dsi2_read_from_fifo(struct dw_mipi_dsi2 *dsi2,
 
 static void dw_mipi_dsi2_clk_management(struct dw_mipi_dsi2 *dsi2)
 {
-	u32 clk_type;
+	unsigned long clk_type;
 
 	/*
 	 * initial deskew calibration is send after phy_power_on,
 	 * then we can configure clk_type.
 	 */
-	if (dsi2->mode_flags & MIPI_DSI_CLOCK_NON_CONTINUOUS)
+	if ((dsi2->mode_flags & MIPI_DSI_CLOCK_NON_CONTINUOUS) == MIPI_DSI_CLOCK_NON_CONTINUOUS) {
 		clk_type = NON_CONTINUOUS_CLK;
-	else
+	} else {
 		clk_type = CONTIUOUS_CLK;
+	}
 
 	dsi_update_bits(dsi2, DSI2_PHY_CLK_CFG, CLK_TYPE_MASK, clk_type);
 }
@@ -470,69 +489,73 @@ static ssize_t dw_mipi_dsi2_transfer(struct dw_mipi_dsi2 *dsi2,
 {
 	struct mipi_dsi_packet packet;
 	int ret;
-	int val;
-	u32 mode;
+	unsigned long val;
+	unsigned long mode;
 
 	dw_mipi_dsi2_clk_management(dsi2);
 	dsi_update_bits(dsi2, DSI2_DSI_VID_TX_CFG, LPDT_DISPLAY_CMD_EN,
-			msg->flags & MIPI_DSI_MSG_USE_LPM ?
-			LPDT_DISPLAY_CMD_EN : 0);
+			(msg->flags & MIPI_DSI_MSG_USE_LPM) == MIPI_DSI_MSG_USE_LPM ?
+			LPDT_DISPLAY_CMD_EN : 0UL);
 
 	/* create a packet to the DSI protocol */
 	ret = mipi_dsi_create_packet(&packet, msg);
-	if (ret) {
-		printf("failed to create packet: %d\n", ret);
+	if (ret < 0) {
+		(void)printf("failed to create packet: %d\n", ret);
 		return ret;
 	}
 
 	/* check cri interface is not busy */
 	ret = cri_fifos_wait_avail(dsi2);
-	if (ret)
+	if (ret < 0) {
 		return ret;
+	}
 
 	/* Send payload */
-	while (DIV_ROUND_UP(packet.payload_length, 4)) {
-		if (packet.payload_length < 4) {
+	while (DIV_ROUND_UP(packet.payload_length, 4UL) > 0UL) {
+		if (packet.payload_length < 4UL) {
 			/* send residu payload */
 			val = 0;
-			memcpy(&val, packet.payload, packet.payload_length);
+			(void)memcpy(&val, packet.payload, packet.payload_length);
 			dsi_write(dsi2, DSI2_CRI_TX_PLD, val);
-			packet.payload_length = 0;
+			packet.payload_length = 0UL;
 		} else {
 			val = get_unaligned_le32(packet.payload);
 			dsi_write(dsi2, DSI2_CRI_TX_PLD, val);
-			packet.payload += 4;
-			packet.payload_length -= 4;
+			packet.payload += 4UL;
+			packet.payload_length -= 4UL;
 		}
 	}
 
 	/* Send packet header */
-	mode = CMD_TX_MODE(msg->flags & MIPI_DSI_MSG_USE_LPM ? 1 : 0);
+	mode = CMD_TX_MODE((msg->flags & MIPI_DSI_MSG_USE_LPM) == MIPI_DSI_MSG_USE_LPM ? 1UL : 0UL);
 	val = get_unaligned_le32(packet.header);
 	dsi_write(dsi2, DSI2_CRI_TX_HDR, mode | val);
 
 	ret = cri_fifos_wait_avail(dsi2);
-	if (ret)
+	if (ret < 0) {
 		return ret;
+	}
 
-	if (msg->rx_len) {
+	if (msg->rx_len > 0UL) {
 		ret = dw_mipi_dsi2_read_from_fifo(dsi2, msg);
-		if (ret < 0)
+		if (ret < 0) {
 			return ret;
+		}
 	}
 
 	if (dsi2->slave) {
-		ret = dw_mipi_dsi2_transfer(dsi2->slave, msg);
-		if (ret < 0)
+		ret = (int)dw_mipi_dsi2_transfer(dsi2->slave, msg);
+		if (ret < 0) {
 			return ret;
+		}
 	}
 
-	return msg->rx_len ? msg->rx_len : msg->tx_len;
+	return (msg->rx_len > 0UL) ? (ssize_t)msg->rx_len : (ssize_t)msg->tx_len;
 }
 
 static void dw_mipi_dsi2_ipi_color_coding_cfg(struct dw_mipi_dsi2 *dsi2)
 {
-	u32 val, color_depth;
+	unsigned long val, color_depth;
 
 	switch (dsi2->format) {
 	case MIPI_DSI_FMT_RGB666:
@@ -549,41 +572,45 @@ static void dw_mipi_dsi2_ipi_color_coding_cfg(struct dw_mipi_dsi2 *dsi2)
 	}
 
 	val = IPI_DEPTH(color_depth) |
-	      IPI_FORMAT(dsi2->dsc_enable ? IPI_FORMAT_DSC : IPI_FORMAT_RGB);
+	      IPI_PIXEL_FORMAT(dsi2->dsc_enable ? IPI_FORMAT_DSC : IPI_FORMAT_RGB);
 	dsi_write(dsi2, DSI2_IPI_COLOR_MAN_CFG, val);
 	grf_field_write(dsi2, IPI_COLOR_DEPTH, color_depth);
 
-	if (dsi2->dsc_enable)
+	if (dsi2->dsc_enable) {
 		grf_field_write(dsi2, IPI_FORMAT, IPI_FORMAT_DSC);
+	}
 }
 
 static void dw_mipi_dsi2_ipi_set(struct dw_mipi_dsi2 *dsi2)
 {
 	struct drm_display_mode *mode = &dsi2->mode;
-	u32 hline, hsa, hbp, hact;
+	int hline, hsa, hbp, hact;
 	u64 hline_time, hsa_time, hbp_time, hact_time, tmp;
 	u64 pixel_clk, phy_hs_clk;
-	u32 vact, vsa, vfp, vbp;
-	u16 val;
+	int vact, vsa, vfp, vbp;
+	unsigned long val;
 
-	if (dsi2->slave || dsi2->master)
-		val = mode->hdisplay / 2;
-	else
-		val = mode->hdisplay;
+	if (dsi2->slave || dsi2->master) {
+		val = (unsigned long)mode->hdisplay / 2UL;
+	} else {
+		val = (unsigned long)mode->hdisplay;
+	}
 
 	dsi_write(dsi2, DSI2_IPI_PIX_PKT_CFG, MAX_PIX_PKT(val));
 
 	dw_mipi_dsi2_ipi_color_coding_cfg(dsi2);
 
-	if (dsi2->auto_calc_mode)
+	if (dsi2->auto_calc_mode) {
 		return;
+	}
 
 	/*
 	 * if the controller is intended to operate in data stream mode,
 	 * no more steps are required.
 	 */
-	if (!(dsi2->mode_flags & MIPI_DSI_MODE_VIDEO))
+	if ((dsi2->mode_flags & MIPI_DSI_MODE_VIDEO) != MIPI_DSI_MODE_VIDEO) {
 		return;
+	}
 
 	vact = mode->vdisplay;
 	vsa = mode->vsync_end - mode->vsync_start;
@@ -594,27 +621,28 @@ static void dw_mipi_dsi2_ipi_set(struct dw_mipi_dsi2 *dsi2)
 	hbp = mode->htotal - mode->hsync_end;
 	hline = mode->htotal;
 
-	pixel_clk = mode->crtc_clock * MSEC_PER_SEC;
+	pixel_clk = (unsigned long)mode->crtc_clock * MSEC_PER_SEC;
 
-	if (dsi2->c_option)
-		phy_hs_clk = DIV_ROUND_CLOSEST(dsi2->lane_hs_rate * MSEC_PER_SEC, 7);
-	else
-		phy_hs_clk = DIV_ROUND_CLOSEST(dsi2->lane_hs_rate * MSEC_PER_SEC, 16);
+	if (dsi2->c_option) {
+		phy_hs_clk = DIV_ROUND_CLOSEST((dsi2->lane_hs_rate * MSEC_PER_SEC), (7UL));
+	} else {
+		phy_hs_clk = DIV_ROUND_CLOSEST((dsi2->lane_hs_rate * MSEC_PER_SEC), (16UL));
+	}
 
-	tmp = hsa * phy_hs_clk;
-	hsa_time = DIV_ROUND_CLOSEST(tmp << 16, pixel_clk);
+	tmp = (u64)hsa * phy_hs_clk;
+	hsa_time = (u64)DIV_ROUND_CLOSEST((tmp << 16UL), (pixel_clk));
 	dsi_write(dsi2, DSI2_IPI_VID_HSA_MAN_CFG, VID_HSA_TIME(hsa_time));
 
-	tmp = hbp * phy_hs_clk;
-	hbp_time = DIV_ROUND_CLOSEST(tmp << 16, pixel_clk);
+	tmp = (u64)hbp * phy_hs_clk;
+	hbp_time = (u64)DIV_ROUND_CLOSEST((tmp << 16UL), (pixel_clk));
 	dsi_write(dsi2, DSI2_IPI_VID_HBP_MAN_CFG, VID_HBP_TIME(hbp_time));
 
-	tmp = hact * phy_hs_clk;
-	hact_time = DIV_ROUND_CLOSEST(tmp << 16, pixel_clk);
+	tmp = (u64)hact * phy_hs_clk;
+	hact_time = (u64)DIV_ROUND_CLOSEST((tmp << 16UL), (pixel_clk));
 	dsi_write(dsi2, DSI2_IPI_VID_HACT_MAN_CFG, VID_HACT_TIME(hact_time));
 
-	tmp = hline * phy_hs_clk;
-	hline_time = DIV_ROUND_CLOSEST(tmp << 16, pixel_clk);
+	tmp = (u64)hline * phy_hs_clk;
+	hline_time = (u64)DIV_ROUND_CLOSEST((tmp << 16UL), (pixel_clk));
 	dsi_write(dsi2, DSI2_IPI_VID_HLINE_MAN_CFG, VID_HLINE_TIME(hline_time));
 
 	dsi_write(dsi2, DSI2_IPI_VID_VSA_MAN_CFG, VID_VSA_LINES(vsa));
@@ -625,33 +653,38 @@ static void dw_mipi_dsi2_ipi_set(struct dw_mipi_dsi2 *dsi2)
 
 static void dw_mipi_dsi2_set_vid_mode(struct dw_mipi_dsi2 *dsi2)
 {
-	u32 val = 0, mode;
+	unsigned long val = 0, mode;
 	int ret;
 
-	if (dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_NO_HFP)
+	if ((dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_NO_HFP) == MIPI_DSI_MODE_VIDEO_NO_HFP) {
 		val |= BLK_HFP_HS_EN;
+	}
 
-	if (dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_NO_HBP)
+	if ((dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_NO_HBP) == MIPI_DSI_MODE_VIDEO_NO_HBP) {
 		val |= BLK_HBP_HS_EN;
+	}
 
-	if (dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_NO_HSA)
+	if ((dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_NO_HSA) == MIPI_DSI_MODE_VIDEO_NO_HSA) {
 		val |= BLK_HSA_HS_EN;
+	}
 
-	if (dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_BURST)
-		val |= VID_MODE_TYPE_BURST;
-	else if (dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE)
-		val |= VID_MODE_TYPE_NON_BURST_SYNC_PULSES;
-	else
-		val |= VID_MODE_TYPE_NON_BURST_SYNC_EVENTS;
+	if ((dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_BURST) == MIPI_DSI_MODE_VIDEO_BURST) {
+		val |= (unsigned long)VID_MODE_TYPE_BURST;
+	} else if ((dsi2->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE) == MIPI_DSI_MODE_VIDEO_SYNC_PULSE) {
+		val |= (unsigned long)VID_MODE_TYPE_NON_BURST_SYNC_PULSES;
+	} else {
+		val |= (unsigned long)VID_MODE_TYPE_NON_BURST_SYNC_EVENTS;
+	}
 
 	dsi_write(dsi2, DSI2_DSI_VID_TX_CFG, val);
 
-	dsi_write(dsi2, DSI2_MODE_CTRL, VIDEO_MODE);
+	dsi_write(dsi2, DSI2_MODE_CTRL, (unsigned long)VIDEO_MODE);
 	ret = readl_poll_timeout(dsi2->base + DSI2_MODE_STATUS,
-				 mode, mode & VIDEO_MODE,
+				 mode, (mode & VIDEO_MODE) == VIDEO_MODE,
 				 MODE_STATUS_TIMEOUT_US);
-	if (ret < 0)
-		printf("failed to enter video mode\n");
+	if (ret < 0) {
+		(void)printf("failed to enter video mode\n");
+	}
 }
 
 static void dw_mipi_dsi2_set_data_stream_mode(struct dw_mipi_dsi2 *dsi2)
@@ -659,12 +692,13 @@ static void dw_mipi_dsi2_set_data_stream_mode(struct dw_mipi_dsi2 *dsi2)
 	u32 mode;
 	int ret;
 
-	dsi_write(dsi2, DSI2_MODE_CTRL, DATA_STREAM_MODE);
+	dsi_write(dsi2, DSI2_MODE_CTRL, (unsigned long)DATA_STREAM_MODE);
 	ret = readl_poll_timeout(dsi2->base + DSI2_MODE_STATUS,
-				 mode, mode & DATA_STREAM_MODE,
+				 mode, (mode & DATA_STREAM_MODE) == DATA_STREAM_MODE,
 				 MODE_STATUS_TIMEOUT_US);
-	if (ret < 0)
-		printf("failed to enter data stream mode\n");
+	if (ret < 0) {
+		(void)printf("failed to enter data stream mode\n");
+	}
 }
 
 static void dw_mipi_dsi2_set_cmd_mode(struct dw_mipi_dsi2 *dsi2)
@@ -672,12 +706,13 @@ static void dw_mipi_dsi2_set_cmd_mode(struct dw_mipi_dsi2 *dsi2)
 	u32 mode;
 	int ret;
 
-	dsi_write(dsi2, DSI2_MODE_CTRL, COMMAND_MODE);
-	ret = readl_poll_timeout(dsi2->base + DSI2_MODE_STATUS,
-				 mode, mode & COMMAND_MODE,
+	dsi_write(dsi2, DSI2_MODE_CTRL, (unsigned long)COMMAND_MODE);
+	ret = readl_poll_timeout((dsi2->base + DSI2_MODE_STATUS),
+				 mode, ((mode & COMMAND_MODE) == COMMAND_MODE),
 				 MODE_STATUS_TIMEOUT_US);
-	if (ret < 0)
-		printf("failed to enter cmd mode\n");
+	if (ret < 0) {
+		(void)printf("failed to enter cmd mode\n");
+	}
 }
 
 static void dw_mipi_dsi2_enable(struct dw_mipi_dsi2 *dsi2)
@@ -689,21 +724,24 @@ static void dw_mipi_dsi2_enable(struct dw_mipi_dsi2 *dsi2)
 	dw_mipi_dsi2_ipi_set(dsi2);
 
 	if (dsi2->auto_calc_mode) {
-		dsi_write(dsi2, DSI2_MODE_CTRL, AUTOCALC_MODE);
+		dsi_write(dsi2, DSI2_MODE_CTRL, (unsigned long)AUTOCALC_MODE);
 		ret = readl_poll_timeout(dsi2->base + DSI2_MODE_STATUS,
 					 mode, mode == IDLE_MODE,
 					 MODE_STATUS_TIMEOUT_US);
-		if (ret < 0)
-			printf("auto calculation training failed\n");
+		if (ret < 0) {
+			(void)printf("auto calculation training failed\n");
+		}
 	}
 
-	if (dsi2->mode_flags & MIPI_DSI_MODE_VIDEO)
+	if ((dsi2->mode_flags & MIPI_DSI_MODE_VIDEO) == MIPI_DSI_MODE_VIDEO) {
 		dw_mipi_dsi2_set_vid_mode(dsi2);
-	else
+	} else {
 		dw_mipi_dsi2_set_data_stream_mode(dsi2);
+	}
 
-	if (dsi2->slave)
+	if (dsi2->slave) {
 	    dw_mipi_dsi2_enable(dsi2->slave);
+	}
 }
 
 static void dw_mipi_dsi2_disable(struct dw_mipi_dsi2 *dsi2)
@@ -711,24 +749,28 @@ static void dw_mipi_dsi2_disable(struct dw_mipi_dsi2 *dsi2)
 	dsi_write(dsi2, DSI2_IPI_PIX_PKT_CFG, 0);
 	dw_mipi_dsi2_set_cmd_mode(dsi2);
 
-	if (dsi2->slave)
+	if (dsi2->slave) {
 		dw_mipi_dsi2_disable(dsi2->slave);
+	}
 }
 
 static void dw_mipi_dsi2_post_disable(struct dw_mipi_dsi2 *dsi2)
 {
-	if (!dsi2->prepared)
+	if (!dsi2->prepared) {
 		return;
+	}
 
 	dsi_write(dsi2, DSI2_PWR_UP, RESET);
 
-	if (dsi2->dcphy.phy)
-		rockchip_phy_power_off(dsi2->dcphy.phy);
+	if (dsi2->dcphy.phy) {
+		(void)rockchip_phy_power_off(dsi2->dcphy.phy);
+	}
 
 	dsi2->prepared = false;
 
-	if (dsi2->slave)
+	if (dsi2->slave) {
 		dw_mipi_dsi2_post_disable(dsi2->slave);
+	}
 }
 
 static int dw_mipi_dsi2_connector_pre_init(struct rockchip_connector *conn,
@@ -744,13 +786,14 @@ static int dw_mipi_dsi2_connector_pre_init(struct rockchip_connector *conn,
 
 	if (conn->bridge) {
 		device = dev_get_platdata(conn->bridge->dev);
-		if (!device)
+		if (!device) {
 			return -ENODEV;
+		}
 
 		device->host = host;
-		sprintf(name, "%s.%d", host->dev->name, device->channel);
-		device_set_name(conn->bridge->dev, name);
-		mipi_dsi_attach(device);
+		(void)sprintf(name, "%s.%d", host->dev->name, device->channel);
+		(void)device_set_name(conn->bridge->dev, name);
+		(void)mipi_dsi_attach(device);
 	}
 
 	return 0;
@@ -761,9 +804,10 @@ static int dw_mipi_dsi2_get_dsc_params_from_sink(struct dw_mipi_dsi2 *dsi2)
 	struct udevice *dev = dsi2->device->dev;
 	struct rockchip_cmd_header *header;
 	struct drm_dsc_picture_parameter_set *pps = NULL;
-	u8 *dsc_packed_pps;
+	struct drm_dsc_picture_parameter_set *dsc_packed_pps;
 	const void *data;
-	int len;
+	int len_tmp;
+	unsigned long len;
 
 	dsi2->c_option = dev_read_bool(dev, "phy-c-option");
 	dsi2->scrambling_en = dev_read_bool(dev, "scrambling-enable");
@@ -776,32 +820,37 @@ static int dw_mipi_dsi2_get_dsc_params_from_sink(struct dw_mipi_dsi2 *dsi2)
 		dsi2->slave->dsc_enable = dsi2->dsc_enable;
 	}
 
-	if (!dsi2->dsc_enable)
+	if (!dsi2->dsc_enable) {
 		return 0;
+	}
 
 	dsi2->slice_width = dev_read_u32_default(dev, "slice-width", 0);
 	dsi2->slice_height = dev_read_u32_default(dev, "slice-height", 0);
 	dsi2->version_major = dev_read_u32_default(dev, "version-major", 0);
 	dsi2->version_minor = dev_read_u32_default(dev, "version-minor", 0);
 
-	data = dev_read_prop(dev, "panel-init-sequence", &len);
-	if (!data)
+	data = dev_read_prop(dev, "panel-init-sequence", &len_tmp);
+	if (!data) {
 		return -EINVAL;
+	}
 
+	len = (unsigned long)len_tmp;
 	while (len > sizeof(*header)) {
 		header = (struct rockchip_cmd_header *)data;
 		data += sizeof(*header);
 		len -= sizeof(*header);
 
-		if (header->payload_length > len)
+		if (header->payload_length > len) {
 			return -EINVAL;
+		}
 
-		if (header->data_type == MIPI_DSI_PICTURE_PARAMETER_SET) {
+		if (header->data_type == (u8)MIPI_DSI_PICTURE_PARAMETER_SET) {
 			dsc_packed_pps = calloc(1, header->payload_length);
-			if (!dsc_packed_pps)
+			if (!dsc_packed_pps) {
 				return -ENOMEM;
+			}
 
-			memcpy(dsc_packed_pps, data, header->payload_length);
+			(void)memcpy(dsc_packed_pps, data, header->payload_length);
 			pps = (struct drm_dsc_picture_parameter_set *)dsc_packed_pps;
 			break;
 		}
@@ -811,17 +860,17 @@ static int dw_mipi_dsi2_get_dsc_params_from_sink(struct dw_mipi_dsi2 *dsi2)
 	}
 
 	if (!pps) {
-		printf("not found dsc pps definition\n");
+		(void)printf("not found dsc pps definition\n");
 		return -EINVAL;
 	}
 
 	dsi2->pps = pps;
 
 	if (dsi2->slave) {
-		u16 pic_width = be16_to_cpu(pps->pic_width) / 2;
+		u16 pic_width = be16_to_cpu(pps->pic_width) / (u16)2;
 
 		dsi2->pps->pic_width = cpu_to_be16(pic_width);
-		printf("dsc pic_width change from %d to %d\n", pic_width * 2, pic_width);
+		(void)printf("dsc pic_width change from %ld to %d\n", pic_width * 2UL, pic_width);
 	}
 
 	return 0;
@@ -832,22 +881,24 @@ static int dw_mipi_dsi2_connector_init(struct rockchip_connector *conn, struct d
 	struct connector_state *conn_state = &state->conn_state;
 	struct crtc_state *cstate = &state->crtc_state;
 	struct dw_mipi_dsi2 *dsi2 = dev_get_priv(conn->dev);
-	struct rockchip_phy *phy = NULL;
+	struct rockchip_phy *phy;
 	struct udevice *phy_dev;
 	struct udevice *dev;
+	unsigned long output_if, output_flags;
 	int ret;
 
-	conn_state->disp_info  = rockchip_get_disp_info(conn_state->type, dsi2->id);
+	conn_state->disp_info  = rockchip_get_disp_info(conn_state->type, (int)dsi2->id);
 	dsi2->dcphy.phy = conn->phy;
 
 	conn_state->output_mode = ROCKCHIP_OUT_MODE_P888;
 	conn_state->color_encoding = DRM_COLOR_YCBCR_BT709;
 	conn_state->color_range = DRM_COLOR_YCBCR_FULL_RANGE;
-	conn_state->output_if |=
-		dsi2->id ? VOP_OUTPUT_IF_MIPI1 : VOP_OUTPUT_IF_MIPI0;
+	output_if = ((unsigned long)dsi2->id == 1UL) ? VOP_OUTPUT_IF_MIPI1 : VOP_OUTPUT_IF_MIPI0;
+	conn_state->output_if = (int)output_if;
 
-	if (!(dsi2->mode_flags & MIPI_DSI_MODE_VIDEO)) {
-		conn_state->output_flags |= ROCKCHIP_OUTPUT_MIPI_DS_MODE;
+	if ((dsi2->mode_flags & MIPI_DSI_MODE_VIDEO) != MIPI_DSI_MODE_VIDEO) {
+		output_flags = ROCKCHIP_OUTPUT_MIPI_DS_MODE;
+		conn_state->output_flags = (int)output_flags;
 		conn_state->hold_mode = dsi2->disable_hold_mode ? false : true;
 	}
 
@@ -855,43 +906,52 @@ static int dw_mipi_dsi2_connector_init(struct rockchip_connector *conn, struct d
 		ret = uclass_get_device_by_name(UCLASS_DISPLAY,
 						"dsi@fde30000",
 						&dev);
-		if (ret)
+		if (ret < 0) {
 			return ret;
+		}
 
 		dsi2->slave = dev_get_priv(dev);
-		if (!dsi2->slave)
+		if (!dsi2->slave) {
 			return -ENODEV;
+		}
 
 		dsi2->slave->master = dsi2;
-		dsi2->lanes /= 2;
+		dsi2->lanes /= (u8)2;
 
 		dsi2->slave->auto_calc_mode = dsi2->auto_calc_mode;
 		dsi2->slave->lanes = dsi2->lanes;
 		dsi2->slave->format = dsi2->format;
 		dsi2->slave->mode_flags = dsi2->mode_flags;
 		dsi2->slave->channel = dsi2->channel;
-		conn_state->output_flags |=
-				ROCKCHIP_OUTPUT_DUAL_CHANNEL_LEFT_RIGHT_MODE;
-		if (dsi2->data_swap)
-			conn_state->output_flags |= ROCKCHIP_OUTPUT_DATA_SWAP;
+		output_flags = ROCKCHIP_OUTPUT_DUAL_CHANNEL_LEFT_RIGHT_MODE;
+		conn_state->output_flags =
+				(int)ROCKCHIP_OUTPUT_DUAL_CHANNEL_LEFT_RIGHT_MODE;
+		if (dsi2->data_swap) {
+			output_flags |= ROCKCHIP_OUTPUT_DATA_SWAP;
+			conn_state->output_flags = (int)output_flags;
+		}
 
-		conn_state->output_if |= VOP_OUTPUT_IF_MIPI1;
+		output_if |= VOP_OUTPUT_IF_MIPI1;
+		conn_state->output_if = (int)output_if;
 
 		ret = uclass_get_device_by_phandle(UCLASS_PHY, dev,
 						   "phys", &phy_dev);
-		if (ret)
+		if (ret < 0) {
 			return -ENODEV;
+		}
 
 		phy = (struct rockchip_phy *)dev_get_driver_data(phy_dev);
-		if (!phy)
+		if (!phy) {
 			return -ENODEV;
+		}
 
 		dsi2->slave->dcphy.phy = phy;
-		if (phy->funcs && phy->funcs->init)
+		if ((phy->funcs != NULL) && (phy->funcs->init != NULL)) {
 			return phy->funcs->init(phy);
+		}
 	}
 
-	dw_mipi_dsi2_get_dsc_params_from_sink(dsi2);
+	(void)dw_mipi_dsi2_get_dsc_params_from_sink(dsi2);
 
 	if (dm_gpio_is_valid(&dsi2->te_gpio)) {
 		cstate->soft_te = true;
@@ -900,14 +960,14 @@ static int dw_mipi_dsi2_connector_init(struct rockchip_connector *conn, struct d
 
 	if (dsi2->dsc_enable) {
 		cstate->dsc_enable = 1;
-		cstate->dsc_sink_cap.version_major = dsi2->version_major;
-		cstate->dsc_sink_cap.version_minor = dsi2->version_minor;
-		cstate->dsc_sink_cap.slice_width = dsi2->slice_width;
-		cstate->dsc_sink_cap.slice_height = dsi2->slice_height;
+		cstate->dsc_sink_cap.version_major = (u8)dsi2->version_major;
+		cstate->dsc_sink_cap.version_minor = (u8)dsi2->version_minor;
+		cstate->dsc_sink_cap.slice_width = (u16)dsi2->slice_width;
+		cstate->dsc_sink_cap.slice_height = (u16)dsi2->slice_height;
 		/* only can support rgb888 panel now */
-		cstate->dsc_sink_cap.target_bits_per_pixel_x16 = 8 << 4;
-		cstate->dsc_sink_cap.native_420 = 0;
-		memcpy(&cstate->pps, dsi2->pps, sizeof(struct drm_dsc_picture_parameter_set));
+		cstate->dsc_sink_cap.target_bits_per_pixel_x16 = (u16)8 << (u16)4;
+		cstate->dsc_sink_cap.native_420 = false;
+		(void)memcpy(&cstate->pps, dsi2->pps, sizeof(struct drm_dsc_picture_parameter_set));
 	}
 
 	return 0;
@@ -918,19 +978,20 @@ static int dw_mipi_dsi2_connector_init(struct rockchip_connector *conn, struct d
  * from the valid ranges specified in Section 6.9, Table 14, Page 41
  * of the D-PHY specification (v2.1).
  */
-int mipi_dphy_get_default_config(unsigned long long hs_clk_rate,
+static int mipi_dphy_get_default_config(unsigned long long hs_clk_rate,
 				 struct mipi_dphy_configure *cfg)
 {
 	unsigned long long ui;
 
-	if (!cfg)
+	if (!cfg) {
 		return -EINVAL;
+	}
 
-	ui = ALIGN(PSEC_PER_SEC, hs_clk_rate);
-	do_div(ui, hs_clk_rate);
+	ui = (u64)ALIGN(PSEC_PER_SEC, hs_clk_rate);
+	ui /= hs_clk_rate;
 
 	cfg->clk_miss = 0;
-	cfg->clk_post = 60000 + 52 * ui;
+	cfg->clk_post = (unsigned int)(60000ULL + 52ULL * ui);
 	cfg->clk_pre = 8000;
 	cfg->clk_prepare = 38000;
 	cfg->clk_settle = 95000;
@@ -940,9 +1001,9 @@ int mipi_dphy_get_default_config(unsigned long long hs_clk_rate,
 	cfg->d_term_en = 0;
 	cfg->eot = 0;
 	cfg->hs_exit = 100000;
-	cfg->hs_prepare = 40000 + 4 * ui;
-	cfg->hs_zero = 105000 + 6 * ui;
-	cfg->hs_settle = 85000 + 6 * ui;
+	cfg->hs_prepare = (unsigned int)(40000ULL + 4ULL * ui);
+	cfg->hs_zero = (unsigned int)(105000ULL + 6ULL * ui);
+	cfg->hs_settle = (unsigned int)(85000ULL + 6ULL * ui);
 	cfg->hs_skip = 40000;
 
 	/*
@@ -956,12 +1017,12 @@ int mipi_dphy_get_default_config(unsigned long long hs_clk_rate,
 	 * not parameterize on anything other that ui, so this code will
 	 * assumes that reverse-direction HS mode is supported and uses n = 4.
 	 */
-	cfg->hs_trail = max(4 * 8 * ui, 60000 + 4 * 4 * ui);
+	cfg->hs_trail = (unsigned int)max(4ULL * 8ULL * ui, 60000ULL + 4ULL * 4ULL * ui);
 
 	cfg->init = 100;
 	cfg->lpx = 50000;
-	cfg->ta_get = 5 * cfg->lpx;
-	cfg->ta_go = 4 * cfg->lpx;
+	cfg->ta_get = (unsigned int)(5UL * cfg->lpx);
+	cfg->ta_go = (unsigned int)(4UL * cfg->lpx);
 	cfg->ta_sure = cfg->lpx;
 	cfg->wakeup = 1000;
 
@@ -970,13 +1031,14 @@ int mipi_dphy_get_default_config(unsigned long long hs_clk_rate,
 
 static void dw_mipi_dsi2_set_hs_clk(struct dw_mipi_dsi2 *dsi2, unsigned long rate)
 {
-	mipi_dphy_get_default_config(rate, &dsi2->mipi_dphy_cfg);
+	(void)mipi_dphy_get_default_config(rate, &dsi2->mipi_dphy_cfg);
 
-	if (!dsi2->c_option)
-		rockchip_phy_set_mode(dsi2->dcphy.phy, PHY_MODE_MIPI_DPHY);
+	if (!dsi2->c_option) {
+		(void)rockchip_phy_set_mode(dsi2->dcphy.phy, PHY_MODE_MIPI_DPHY);
+	}
 
 	rate = rockchip_phy_set_pll(dsi2->dcphy.phy, rate);
-	dsi2->lane_hs_rate = DIV_ROUND_CLOSEST(rate, MSEC_PER_SEC);
+	dsi2->lane_hs_rate = (unsigned int)DIV_ROUND_CLOSEST((rate), (MSEC_PER_SEC));
 }
 
 static void dw_mipi_dsi2_host_softrst(struct dw_mipi_dsi2 *dsi2)
@@ -987,7 +1049,7 @@ static void dw_mipi_dsi2_host_softrst(struct dw_mipi_dsi2 *dsi2)
 }
 
 static void
-dw_mipi_dsi2_work_mode(struct dw_mipi_dsi2 *dsi2, u32 mode)
+dw_mipi_dsi2_work_mode(struct dw_mipi_dsi2 *dsi2, unsigned long mode)
 {
 	/*
 	 * select controller work in Manual mode
@@ -999,19 +1061,19 @@ dw_mipi_dsi2_work_mode(struct dw_mipi_dsi2 *dsi2, u32 mode)
 
 static void dw_mipi_dsi2_phy_mode_cfg(struct dw_mipi_dsi2 *dsi2)
 {
-	u32 val = 0;
+	unsigned long val = 0;
 
 	/* PPI width is fixed to 16 bits in DCPHY */
-	val |= PPI_WIDTH(PPI_WIDTH_16_BITS) | PHY_LANES(dsi2->lanes);
+	val |= PPI_WIDTH(PPI_WIDTH_16_BITS) | PHY_LANES((unsigned long)dsi2->lanes);
 	val |= PHY_TYPE(dsi2->c_option ? CPHY : DPHY);
 	dsi_write(dsi2, DSI2_PHY_MODE_CFG, val);
 }
 
 static void dw_mipi_dsi2_phy_clk_mode_cfg(struct dw_mipi_dsi2 *dsi2)
 {
-	u32 sys_clk = clk_get_rate(&dsi2->sys_clk) / USEC_PER_SEC;
-	u32 esc_clk_div;
-	u32 val = 0;
+	unsigned long sys_clk = clk_get_rate(&dsi2->sys_clk) / USEC_PER_SEC;
+	unsigned long esc_clk_div;
+	unsigned long val = 0;
 
 	/*
 	 * clk_type should be NON_CONTINUOUS_CLK before
@@ -1029,49 +1091,51 @@ static void dw_mipi_dsi2_phy_clk_mode_cfg(struct dw_mipi_dsi2 *dsi2)
 static void dw_mipi_dsi2_phy_ratio_cfg(struct dw_mipi_dsi2 *dsi2)
 {
 	u64 ipi_clk, phy_hsclk, tmp;
-	u32 sys_clk = clk_get_rate(&dsi2->sys_clk);
+	unsigned long sys_clk = clk_get_rate(&dsi2->sys_clk);
 
 	/*
 	 * in DPHY mode, the phy_hstx_clk is exactly 1/16 the Lane high-speed
 	 * data rate; In CPHY mode, the phy_hstx_clk is exactly 1/7 the trio
 	 * high speed symbol rate.
 	 */
-	if (dsi2->c_option)
-		phy_hsclk = DIV_ROUND_CLOSEST(dsi2->lane_hs_rate * MSEC_PER_SEC, 7);
+	if (dsi2->c_option) {
+		phy_hsclk = DIV_ROUND_CLOSEST((dsi2->lane_hs_rate * MSEC_PER_SEC), (7UL));
 
-	else
-		phy_hsclk = DIV_ROUND_CLOSEST(dsi2->lane_hs_rate * MSEC_PER_SEC, 16);
+	} else {
+		phy_hsclk = DIV_ROUND_CLOSEST((dsi2->lane_hs_rate * MSEC_PER_SEC), (16UL));
+	}
 
 	/* IPI_RATIO_MAN_CFG = PHY_HSTX_CLK / IPI_CLK */
 	ipi_clk = dsi2->mipi_pixel_rate;
 
-	tmp = DIV_ROUND_CLOSEST(phy_hsclk << 16, ipi_clk);
+	tmp = DIV_ROUND_CLOSEST((phy_hsclk << 16ULL), (ipi_clk));
 	dsi_write(dsi2, DSI2_PHY_IPI_RATIO_MAN_CFG, PHY_IPI_RATIO(tmp));
 
 	/* SYS_RATIO_MAN_CFG = MIPI_DCPHY_HSCLK_Freq / SYS_CLK */
-	tmp = DIV_ROUND_CLOSEST(phy_hsclk << 16, sys_clk);
+	tmp = DIV_ROUND_CLOSEST((phy_hsclk << 16UL), (sys_clk));
 	dsi_write(dsi2, DSI2_PHY_SYS_RATIO_MAN_CFG, PHY_SYS_RATIO(tmp));
 }
 
 static void dw_mipi_dsi2_lp2hs_or_hs2lp_cfg(struct dw_mipi_dsi2 *dsi2)
 {
 	struct mipi_dphy_configure *cfg = &dsi2->mipi_dphy_cfg;
+	unsigned int timing;
 	unsigned long long tmp, ui;
 	unsigned long long hstx_clk;
 
-	hstx_clk = DIV_ROUND_CLOSEST(dsi2->lane_hs_rate * MSEC_PER_SEC, 16);
+	hstx_clk = DIV_ROUND_CLOSEST((dsi2->lane_hs_rate * MSEC_PER_SEC), (16UL));
 
 	ui = ALIGN(PSEC_PER_SEC, hstx_clk);
-	do_div(ui, hstx_clk);
+	ui /= hstx_clk;
 
 	/* PHY_LP2HS_TIME = (TLPX + THS-PREPARE + THS-ZERO) / Tphy_hstx_clk */
-	tmp = cfg->lpx + cfg->hs_prepare + cfg->hs_zero;
-	tmp = DIV_ROUND_CLOSEST(tmp << 16, ui);
+	timing = cfg->lpx + cfg->hs_prepare + cfg->hs_zero;
+	tmp = DIV_ROUND_CLOSEST(((unsigned long long)timing << 16ULL), (ui));
 	dsi_write(dsi2, DSI2_PHY_LP2HS_MAN_CFG, PHY_LP2HS_TIME(tmp));
 
 	/* PHY_HS2LP_TIME = (THS-TRAIL + THS-EXIT) / Tphy_hstx_clk */
-	tmp = cfg->hs_trail + cfg->hs_exit;
-	tmp = DIV_ROUND_CLOSEST(tmp << 16, ui);
+	timing = cfg->hs_trail + cfg->hs_exit;
+	tmp = DIV_ROUND_CLOSEST(((unsigned long long)timing << 16UL), (ui));
 	dsi_write(dsi2, DSI2_PHY_HS2LP_MAN_CFG, PHY_HS2LP_TIME(tmp));
 }
 
@@ -1080,8 +1144,9 @@ static void dw_mipi_dsi2_phy_init(struct dw_mipi_dsi2 *dsi2)
 	dw_mipi_dsi2_phy_mode_cfg(dsi2);
 	dw_mipi_dsi2_phy_clk_mode_cfg(dsi2);
 
-	if (dsi2->auto_calc_mode)
+	if (dsi2->auto_calc_mode) {
 		return;
+	}
 
 	dw_mipi_dsi2_phy_ratio_cfg(dsi2);
 	dw_mipi_dsi2_lp2hs_or_hs2lp_cfg(dsi2);
@@ -1091,18 +1156,20 @@ static void dw_mipi_dsi2_phy_init(struct dw_mipi_dsi2 *dsi2)
 
 static void dw_mipi_dsi2_tx_option_set(struct dw_mipi_dsi2 *dsi2)
 {
-	u32 val;
+	unsigned long val;
 
 	val = BTA_EN | EOTP_TX_EN;
 
-	if (dsi2->mode_flags & MIPI_DSI_MODE_NO_EOT_PACKET)
+	if ((dsi2->mode_flags & MIPI_DSI_MODE_NO_EOT_PACKET) == MIPI_DSI_MODE_NO_EOT_PACKET) {
 		val &= ~EOTP_TX_EN;
+	}
 
 	dsi_write(dsi2, DSI2_DSI_GENERAL_CFG, val);
 	dsi_write(dsi2, DSI2_DSI_VCID_CFG, TX_VCID(dsi2->channel));
 
-	if (dsi2->scrambling_en)
+	if (dsi2->scrambling_en) {
 		dsi_write(dsi2, DSI2_DSI_SCRAMBLING_CFG, SCRAMBLING_EN);
+	}
 }
 
 static void dw_mipi_dsi2_irq_enable(struct dw_mipi_dsi2 *dsi2, bool enable)
@@ -1128,39 +1195,42 @@ static void dw_mipi_dsi2_irq_enable(struct dw_mipi_dsi2 *dsi2, bool enable)
 
 static void mipi_dcphy_power_on(struct dw_mipi_dsi2 *dsi2)
 {
-	if (!dsi2->dcphy.phy)
+	if (!dsi2->dcphy.phy) {
 		return;
+	}
 
-	rockchip_phy_power_on(dsi2->dcphy.phy);
+	(void)rockchip_phy_power_on(dsi2->dcphy.phy);
 }
 
 static void dw_mipi_dsi2_pre_enable(struct dw_mipi_dsi2 *dsi2)
 {
-	if (dsi2->prepared)
+	if (dsi2->prepared) {
 		return;
+	}
 
 	dw_mipi_dsi2_host_softrst(dsi2);
 	dsi_write(dsi2, DSI2_PWR_UP, RESET);
 
-	dw_mipi_dsi2_work_mode(dsi2, dsi2->auto_calc_mode ? 0 : MANUAL_MODE_EN);
+	dw_mipi_dsi2_work_mode(dsi2, dsi2->auto_calc_mode ? 0UL : MANUAL_MODE_EN);
 	dw_mipi_dsi2_phy_init(dsi2);
 	dw_mipi_dsi2_tx_option_set(dsi2);
-	dw_mipi_dsi2_irq_enable(dsi2, 0);
+	dw_mipi_dsi2_irq_enable(dsi2, false);
 	mipi_dcphy_power_on(dsi2);
 	dsi_write(dsi2, DSI2_PWR_UP, POWER_UP);
 	dw_mipi_dsi2_set_cmd_mode(dsi2);
 
 	dsi2->prepared = true;
 
-	if (dsi2->slave)
+	if (dsi2->slave) {
 		dw_mipi_dsi2_pre_enable(dsi2->slave);
+	}
 }
 
 static void dw_mipi_dsi2_get_mipi_pixel_clk(struct dw_mipi_dsi2 *dsi2,
 					    struct crtc_state *s)
 {
 	struct drm_display_mode *mode = &dsi2->mode;
-	u8 k = dsi2->slave ? 2 : 1;
+	unsigned long k = dsi2->slave ? 2UL : 1UL;
 
 	/* 1.When MIPI works in uncompressed mode:
 	 * (Video Timing Pixel Rate)/(4)=(MIPI Pixel ClockxK)=(dclk_out×K)=dclk_core
@@ -1169,16 +1239,18 @@ static void dw_mipi_dsi2_get_mipi_pixel_clk(struct dw_mipi_dsi2 *dsi2,
 	 * MIPI is configured as double channel display mode, K=2, otherwise K=1.
 	 */
 	if (dsi2->dsc_enable) {
-		dsi2->mipi_pixel_rate = s->dsc_cds_clk_rate / 2;
-		if (dsi2->slave)
+		dsi2->mipi_pixel_rate = (u64)s->dsc_cds_clk_rate / 2UL;
+		if (dsi2->slave) {
 			dsi2->slave->mipi_pixel_rate = dsi2->mipi_pixel_rate;
+		}
 
 		return;
 	}
 
-	dsi2->mipi_pixel_rate = (mode->crtc_clock * MSEC_PER_SEC) / (4 * k);
-	if (dsi2->slave)
+	dsi2->mipi_pixel_rate = ((unsigned long)mode->crtc_clock * MSEC_PER_SEC) / (4UL * k);
+	if (dsi2->slave) {
 		dsi2->slave->mipi_pixel_rate = dsi2->mipi_pixel_rate;
+	}
 }
 
 static int dw_mipi_dsi2_connector_prepare(struct rockchip_connector *conn,
@@ -1189,23 +1261,26 @@ static int dw_mipi_dsi2_connector_prepare(struct rockchip_connector *conn,
 	struct crtc_state *cstate = &state->crtc_state;
 	unsigned long lane_rate;
 
-	memcpy(&dsi2->mode, &conn_state->mode, sizeof(struct drm_display_mode));
-	if (dsi2->slave)
-		memcpy(&dsi2->slave->mode, &dsi2->mode,
-		       sizeof(struct drm_display_mode));
+	(void)memcpy(&dsi2->mode, &conn_state->mode, sizeof(struct drm_display_mode));
+	if (dsi2->slave) {
+		(void)memcpy(&dsi2->slave->mode, &dsi2->mode,
+			     sizeof(struct drm_display_mode));
+	}
 
 	dw_mipi_dsi2_get_mipi_pixel_clk(dsi2, cstate);
 
 	lane_rate = dw_mipi_dsi2_get_lane_rate(dsi2);
-	if (dsi2->dcphy.phy)
+	if (dsi2->dcphy.phy) {
 		dw_mipi_dsi2_set_hs_clk(dsi2, lane_rate);
+	}
 
-	if (dsi2->slave && dsi2->slave->dcphy.phy)
+	if (dsi2->slave && dsi2->slave->dcphy.phy) {
 		dw_mipi_dsi2_set_hs_clk(dsi2->slave, lane_rate);
+	}
 
-	printf("final DSI-Link bandwidth: %u %s x %d\n",
-	       dsi2->lane_hs_rate, dsi2->c_option ? "Ksps" : "Kbps",
-	       dsi2->slave ? dsi2->lanes * 2 : dsi2->lanes);
+	(void)printf("final DSI-Link bandwidth: %u %s x %d\n",
+		     dsi2->lane_hs_rate, dsi2->c_option ? "Ksps" : "Kbps",
+		     dsi2->slave ? dsi2->lanes * (unsigned int)2 : dsi2->lanes);
 
 	dw_mipi_dsi2_pre_enable(dsi2);
 
@@ -1245,7 +1320,7 @@ static int dw_mipi_dsi2_connector_mode_valid(struct rockchip_connector *conn,
 {
 	struct dw_mipi_dsi2 *dsi2 = dev_get_priv(conn->dev);
 	struct connector_state *conn_state = &state->conn_state;
-	u8 min_pixels = dsi2->slave ? 8 : 4;
+	unsigned int min_pixels = (unsigned int)(dsi2->slave ? 8 : 4);
 	struct videomode vm;
 
 	drm_display_mode_to_videomode(&conn_state->mode, &vm);
@@ -1255,26 +1330,31 @@ static int dw_mipi_dsi2_connector_mode_valid(struct rockchip_connector *conn,
 	 * which is the ip known issues and limitations.
 	 */
 	if (!(vm.hsync_len < min_pixels || vm.hback_porch < min_pixels ||
-	    vm.hfront_porch < min_pixels || vm.hactive < min_pixels))
-		return MODE_OK;
+	    vm.hfront_porch < min_pixels || vm.hactive < min_pixels)) {
+		return (int)MODE_OK;
+	}
 
-	if (vm.hsync_len < min_pixels)
+	if (vm.hsync_len < min_pixels) {
 		vm.hsync_len = min_pixels;
+	}
 
-	if (vm.hback_porch < min_pixels)
+	if (vm.hback_porch < min_pixels) {
 		vm.hback_porch = min_pixels;
+	}
 
-	if (vm.hfront_porch < min_pixels)
+	if (vm.hfront_porch < min_pixels) {
 		vm.hfront_porch = min_pixels;
+	}
 
-	if (vm.hactive < min_pixels)
+	if (vm.hactive < min_pixels) {
 		vm.hactive = min_pixels;
+	}
 
-	memset(&conn_state->mode, 0, sizeof(struct drm_display_mode));
+	(void)memset(&conn_state->mode, 0, sizeof(struct drm_display_mode));
 	drm_display_mode_from_videomode(&vm, &conn_state->mode);
 	conn_state->mode.vrefresh = drm_mode_vrefresh(&conn_state->mode);
 
-	return MODE_OK;
+	return (int)MODE_OK;
 }
 
 static const struct rockchip_connector_funcs dw_mipi_dsi2_connector_funcs = {
@@ -1299,39 +1379,41 @@ static int dw_mipi_dsi2_probe(struct udevice *dev)
 
 	ret = uclass_get_device_by_phandle(UCLASS_SYSCON, dev, "rockchip,grf",
 					   &syscon);
-	if (!ret) {
+	if (ret  == 0) {
 		dsi2->grf = syscon_get_regmap(syscon);
-		if (!dsi2->grf)
+		if (!dsi2->grf) {
 			return -ENODEV;
+		}
 	}
 
 	id = of_alias_get_id(ofnode_to_np(dev->node), "dsi");
-	if (id < 0)
+	if (id < 0) {
 		id = 0;
+	}
 
 	ret = gpio_request_by_name(dev, "te-gpios", 0,
 				   &dsi2->te_gpio, GPIOD_IS_IN);
-	if (ret && ret != -ENOENT) {
-		printf("%s: Cannot get TE GPIO: %d\n", __func__, ret);
+	if (ret < 0 && ret != -ENOENT) {
+		(void)printf("%s: Cannot get TE GPIO: %d\n", __func__, ret);
 		return ret;
 	}
 
 	ret = clk_get_by_name(dev, "sys_clk", &dsi2->sys_clk);
 	if (ret < 0) {
-		printf("failed to get sys_clk: %d\n", ret);
+		(void)printf("failed to get sys_clk: %d\n", ret);
 		return ret;
 	}
 
 	dsi2->dev = dev;
 	dsi2->pdata = pdata;
-	dsi2->id = id;
+	dsi2->id = (unsigned int)id;
 	dsi2->dual_channel = dev_read_bool(dsi2->dev, "rockchip,dual-channel");
 	dsi2->data_swap = dev_read_bool(dsi2->dev, "rockchip,data-swap");
 	dsi2->auto_calc_mode = dev_read_bool(dsi2->dev, "auto-calculation-mode");
 	dsi2->disable_hold_mode = dev_read_bool(dsi2->dev, "disable-hold-mode");
 
-	rockchip_connector_bind(&dsi2->connector, dev, id, &dw_mipi_dsi2_connector_funcs, NULL,
-				DRM_MODE_CONNECTOR_DSI);
+	(void)rockchip_connector_bind(&dsi2->connector, dev, id, &dw_mipi_dsi2_connector_funcs, NULL,
+				      DRM_MODE_CONNECTOR_DSI);
 
 	return 0;
 }
@@ -1402,13 +1484,14 @@ static int dw_mipi_dsi2_host_attach(struct mipi_dsi_host *host,
 {
 	struct dw_mipi_dsi2 *dsi2 = dev_get_priv(host->dev);
 
-	if (device->lanes < 1 || device->lanes > 8)
+	if (device->lanes < (unsigned int)1 || device->lanes > (unsigned int)8) {
 		return -EINVAL;
+	}
 
 	dsi2->lanes = device->lanes;
 	dsi2->channel = device->channel;
 	dsi2->format = device->format;
-	dsi2->mode_flags = device->mode_flags;
+	dsi2->mode_flags = (u32)device->mode_flags;
 	dsi2->device = device;
 
 	return 0;
@@ -1435,21 +1518,21 @@ static int dw_mipi_dsi2_child_post_bind(struct udevice *dev)
 	struct mipi_dsi_device *device = dev_get_parent_platdata(dev);
 	char name[20];
 
-	sprintf(name, "%s.%d", host->dev->name, device->channel);
-	device_set_name(dev, name);
+	(void)sprintf(name, "%s.%d", host->dev->name, device->channel);
+	(void)device_set_name(dev, name);
 
 	device->dev = dev;
 	device->host = host;
-	device->lanes = dev_read_u32_default(dev, "dsi,lanes", 4);
+	device->lanes = (unsigned int)dev_read_u32_default(dev, "dsi,lanes", 4);
 	device->format = dev_read_u32_default(dev, "dsi,format",
-					      MIPI_DSI_FMT_RGB888);
-	device->mode_flags = dev_read_u32_default(dev, "dsi,flags",
-						  MIPI_DSI_MODE_VIDEO |
+					      (int)MIPI_DSI_FMT_RGB888);
+	device->mode_flags = (unsigned long)dev_read_u32_default(dev, "dsi,flags",
+						  (int)(MIPI_DSI_MODE_VIDEO |
 						  MIPI_DSI_MODE_VIDEO_BURST |
 						  MIPI_DSI_MODE_VIDEO_NO_HBP |
 						  MIPI_DSI_MODE_LPM |
-						  MIPI_DSI_MODE_NO_EOT_PACKET);
-	device->channel = dev_read_u32_default(dev, "reg", 0);
+						  MIPI_DSI_MODE_NO_EOT_PACKET));
+	device->channel = (unsigned int)dev_read_u32_default(dev, "reg", 0);
 
 	return 0;
 }
@@ -1460,7 +1543,7 @@ static int dw_mipi_dsi2_child_pre_probe(struct udevice *dev)
 	int ret;
 
 	ret = mipi_dsi_attach(device);
-	if (ret) {
+	if (ret < 0) {
 		dev_err(dev, "mipi_dsi_attach() failed: %d\n", ret);
 		return ret;
 	}
@@ -1474,9 +1557,14 @@ U_BOOT_DRIVER(dw_mipi_dsi2) = {
 	.of_match = dw_mipi_dsi2_ids,
 	.probe = dw_mipi_dsi2_probe,
 	.bind = dw_mipi_dsi2_bind,
-	.priv_auto_alloc_size = sizeof(struct dw_mipi_dsi2),
-	.per_child_platdata_auto_alloc_size = sizeof(struct mipi_dsi_device),
-	.platdata_auto_alloc_size = sizeof(struct mipi_dsi_host),
+	.priv_auto_alloc_size = (signed)sizeof(struct dw_mipi_dsi2),
+	.per_child_platdata_auto_alloc_size = (signed)sizeof(struct mipi_dsi_device),
+	.platdata_auto_alloc_size = (signed)sizeof(struct mipi_dsi_host),
 	.child_post_bind = dw_mipi_dsi2_child_post_bind,
 	.child_pre_probe = dw_mipi_dsi2_child_pre_probe,
 };
+// PRQA S 5129 --
+// PRQA S 5125 --
+// PRQA S 5124 --
+// PRQA S 5118 --
+// PRQA S 3101 --
